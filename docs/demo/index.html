@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>CPRISK — เดโมกดได้จริง (ข้อมูลจำลอง)</title>
+<style>
+:root { --blue: #1f5f8b; --accent: #2b7bb9; --bg: #f4f6f8; --border: #d7dde3;
+        --ok: #1e8e4e; --warn: #c47f00; --danger: #c0392b; }
+* { box-sizing: border-box; }
+body { font-family: "Segoe UI", "Leelawadee UI", Tahoma, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 15px; line-height: 1.6; }
+header.appbar { background: var(--blue); color: #fff; padding: 8px 18px; display: flex; align-items: center; gap: 4px; position: sticky; top: 0; z-index: 50; flex-wrap: wrap; }
+header.appbar h1 { font-size: 16.5px; margin: 0 14px 0 0; font-weight: 600; white-space: nowrap; }
+header.appbar h1 a { color: #fff; text-decoration: none; }
+nav.top { display: flex; gap: 2px; flex-wrap: wrap; }
+nav.top a { color: #dcebf7; text-decoration: none; padding: 6px 11px; border-radius: 6px; font-size: 14px; white-space: nowrap; }
+nav.top a:hover { background: rgba(255,255,255,.12); }
+nav.top a.active { background: rgba(255,255,255,.2); color: #fff; }
+#bell { margin-left: auto; position: relative; color: #fff; text-decoration: none; padding: 6px 10px; font-size: 17px; }
+#bellN { position: absolute; top: 0; right: 0; background: var(--danger); color: #fff; font-size: 11px; border-radius: 9px; padding: 1px 5px; }
+.demo-ribbon { background: #fff3cd; color: #7a5c00; text-align: center; font-size: 13px; padding: 4px 10px; border-bottom: 1px solid #eadb9e; }
+.demo-ribbon a { color: #7a5c00; }
+main { max-width: 1180px; margin: 18px auto; padding: 0 14px 80px; }
+.card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; margin-bottom: 14px; }
+.card h2 { font-size: 15px; margin: 0 0 12px; color: var(--blue); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.btn { display: inline-block; border: none; border-radius: 6px; padding: 9px 18px; font-size: 15px; cursor: pointer; background: #e4e9ee; color: #222; text-decoration: none; font-family: inherit; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-success { background: var(--ok); color: #fff; }
+.btn:disabled { opacity: .5; cursor: default; }
+input, select, textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; width: 100%; max-width: 460px; background: #fff; }
+.field { display: grid; grid-template-columns: 330px 1fr; gap: 4px 14px; padding: 6px 0; align-items: start; }
+.field > label { padding-top: 7px; font-size: 14px; }
+.field .hint { grid-column: 2; font-size: 12.5px; color: #777; }
+.field.hidden { display: none; }
+.field.missing > label { color: #c0392b; font-weight: 600; }
+.field.missing > label::after { content: " — จำเป็นต้องกรอก"; font-size: 12px; font-weight: 400; }
+.field.missing input, .field.missing select, .field.missing textarea, .field.missing .pill span { border-color: #d33 !important; background: #fff6f6; }
+.req { color: #d33; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { position: relative; }
+.pill input { position: absolute; opacity: 0; pointer-events: none; }
+.pill span { display: inline-block; padding: 6px 14px; border: 1px solid var(--border); border-radius: 16px; cursor: pointer; background: #fff; user-select: none; font-size: 14px; }
+.pill input:checked + span { background: var(--accent); color: #fff; border-color: var(--accent); }
+.badge { padding: 2px 10px; border-radius: 12px; font-size: 12.5px; white-space: nowrap; }
+.badge.new { background: #fdecea; color: var(--danger); }
+.badge.ack { background: #fff3d6; color: var(--warn); }
+.badge.resolving { background: #e3f0fb; color: var(--accent); }
+.badge.resolved { background: #dff3e6; color: var(--ok); }
+.sev { display: inline-block; min-width: 26px; text-align: center; padding: 2px 8px; border-radius: 12px; font-size: 12.5px; font-weight: 700; border: 1px solid rgba(0,0,0,.12); cursor: help; }
+table { border-collapse: collapse; width: 100%; background: #fff; }
+th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; font-size: 14px; }
+th { background: #eef3f7; }
+.tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.tabs a { padding: 7px 14px; border-radius: 16px; border: 1px solid var(--border); background: #fff; color: #444; text-decoration: none; font-size: 14px; }
+.tabs a.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tabs a.hot.active { background: var(--danger); border-color: var(--danger); }
+.banner { background: #fff8e6; border: 1px solid #e8c96a; border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; font-size: 14.5px; }
+#toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 22px; border-radius: 8px; opacity: 0; transition: opacity .3s; z-index: 99; pointer-events: none; }
+#toast.show { opacity: .95; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.kpi { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+.kpi .v { font-size: 24px; font-weight: 700; color: var(--blue); }
+.kpi .t { font-size: 12.5px; color: #666; margin-top: 2px; }
+.kpi.hot .v { color: var(--danger); }
+.rolecards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.role { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+.role .ic { font-size: 34px; }
+.role h3 { margin: 6px 0 6px; font-size: 16.5px; color: var(--blue); }
+.role p { font-size: 14px; color: #555; margin: 0 0 12px; }
+/* inbox */
+.sortlink { color: #666; text-decoration: none; padding: 2px 6px; border-radius: 10px; }
+.sortlink.on { background: var(--accent); color: #fff; }
+.inboxtbl tbody tr.rowlink { cursor: pointer; }
+.inboxtbl tbody tr.rowlink:hover { background: #eef5fb !important; }
+.inboxtbl tbody tr.hotrow { background: #fff8f7; }
+.inboxtbl tbody tr.done td, .inboxtbl tbody tr.done td a { color: #98a0a8; }
+.inboxtbl tbody tr.done .sev { opacity: .6; }
+.chip-done { color: #7a8790; font-size: 12.5px; border: 1px solid #cfd6db; border-radius: 12px; padding: 1px 9px; white-space: nowrap; }
+.inboxtbl td, .inboxtbl th { border-left: none; border-right: none; }
+@media (min-width: 761px) { .inboxtbl thead th { position: sticky; top: 46px; z-index: 5; box-shadow: 0 1px 0 var(--border); } }
+@media (max-width: 760px) {
+  .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -18px; padding: 0 18px; }
+  .inboxtbl { min-width: 680px; }
+  .field { grid-template-columns: 1fr; } .field .hint { grid-column: 1; }
+}
+/* case */
+.kv { display: grid; grid-template-columns: 300px 1fr; gap: 12px; padding: 4px 0; font-size: 14px; }
+.casegrid { display: grid; grid-template-columns: 1fr 380px; gap: 14px; align-items: start; }
+@media (max-width: 900px) { .casegrid { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .kv { grid-template-columns: 1fr; gap: 0; } }
+/* NRLS gov clone */
+body.nrlsmode header.appbar, body.nrlsmode .demo-ribbon { display: none; }
+body.nrlsmode main { max-width: none; margin: 0; padding: 0 0 60px; }
+.cprisk-bar { background: #241b47; color: #fff; padding: 8px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+.cprisk-bar .tag { background: #7b5cb8; border-radius: 4px; padding: 2px 8px; font-size: 12.5px; }
+.cprisk-bar button { background: #ffb300; color: #241b47; border: 0; border-radius: 5px; padding: 7px 14px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.cprisk-bar button:disabled { background: #6c628f; color: #cfc9e2; cursor: default; }
+.cprisk-bar a { color: #cfc9e2; font-size: 13px; }
+.gov-ribbon { background: #fff3cd; color: #7a5c00; border-bottom: 1px solid #e6d9a8; padding: 6px 16px; font-size: 13px; text-align: center; }
+.gov-header { background: linear-gradient(180deg, #1f4e8c, #163a6b); color: #fff; padding: 14px 20px; }
+.gov-header .sys { font-size: 19px; font-weight: 700; }
+.gov-header .sub { font-size: 13px; color: #bcd0ea; margin-top: 2px; }
+.gov-menu { background: #0f2c52; color: #9fb6d4; font-size: 13px; padding: 7px 20px; display: flex; gap: 18px; }
+.gov-menu span.active { color: #fff; font-weight: 600; }
+.crumb { background: #f8f9fa; border-bottom: 1px solid #dee2e6; padding: 7px 20px; font-size: 12.5px; color: #6c757d; }
+.gov-wrap { max-width: 880px; margin: 18px auto 60px; background: #fff; border: 1px solid #ced4da; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.form-title { border-bottom: 2px solid #1f4e8c; padding: 12px 18px; font-size: 16.5px; font-weight: 700; color: #163a6b; }
+.gov-sec { background: #eaf1f9; color: #163a6b; font-weight: 700; font-size: 14px; padding: 7px 18px; border-top: 1px solid #d5e0ee; border-bottom: 1px solid #d5e0ee; }
+table.frm { width: 100%; border-collapse: collapse; background: transparent; }
+table.frm td { padding: 9px 18px; vertical-align: top; border: none; border-bottom: 1px dotted #e9ecef; }
+td.lbl { width: 320px; color: #37424e; }
+.gov-wrap .hint { font-size: 12px; color: #8a94a0; margin-top: 3px; }
+.gov-wrap input[type=text], .gov-wrap select, .gov-wrap textarea { max-width: 430px; border-radius: 2px; border-color: #adb5bd; transition: background .25s, border-color .25s; }
+.gov-wrap textarea { max-width: 520px; min-height: 74px; }
+.filling { background: #fff8d6 !important; border-color: #ffb300 !important; box-shadow: 0 0 0 3px rgba(255,179,0,.25); }
+.filled { background: #f2fbf4 !important; border-color: #57a773 !important; }
+.gov-foot { padding: 16px 18px 20px; border-top: 1px solid #dee2e6; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.btn-gov { background: #1f4e8c; color: #fff; border: 0; border-radius: 3px; padding: 9px 26px; font-family: inherit; font-size: 15px; cursor: pointer; }
+.btn-gov:disabled { background: #9fb0c4; cursor: default; }
+.gov-foot .note { font-size: 12.5px; color: #6c757d; }
+.successBox { padding: 40px 20px; text-align: center; }
+.successBox .ok { font-size: 46px; }
+.successBox h2 { color: #1e8e4e; margin: 8px 0 4px; border: none; font-size: 19px; }
+.refno { font-size: 17px; font-weight: 700; color: #163a6b; margin: 10px 0; }
+.btn-back { display: inline-block; background: #241b47; color: #fff; text-decoration: none; border-radius: 5px; padding: 9px 20px; margin-top: 10px; }
+.wide2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+@media (max-width: 900px) { .wide2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <h1><a href="#/">🛡️ CPRISK</a></h1>
+  <nav class="top" id="mainNav">
+    <a href="#/report" data-nav="report">📝 รายงานอุบัติการณ์</a>
+    <a href="#/inbox" data-nav="inbox">📥 งานกรรมการความเสี่ยง</a>
+    <a href="#/dashboard" data-nav="dashboard">📊 Dashboard ผู้บริหาร</a>
+  </nav>
+  <a id="bell" href="#/inbox?severe=1&status=new" title="เคสรุนแรงที่ยังไม่รับเรื่อง — กดเพื่อเปิดรายการ">🔔<span id="bellN"></span></a>
+</header>
+<div class="demo-ribbon">⚠️ เดโมบนเว็บ — ข้อมูลทั้งหมดเป็นข้อมูลจำลอง สิ่งที่กดบันทึกอยู่ในเบราว์เซอร์ของท่านเท่านั้น
+  • <a href="#" onclick="resetDemo();return false">รีเซ็ตข้อมูลเดโม</a>
+  • ระบบจริงรันใน intranet ของ รพ.</div>
+<main id="app"></main>
+<div id="toast"></div>
+
+<script src="data.js"></script>
+<script src="chart.umd.js"></script>
+<script>
+'use strict';
+// ---------- ค่าคงที่ (port จาก server.py) ----------
+const STATUS_TH = {new: '🆕 รายงานใหม่', ack: '👀 รับเรื่องแล้ว', resolving: '🔧 กำลังแก้ไข', resolved: '✅ ปิดเคสแล้ว'};
+const GROUP_TH = {cps: 'Patient Safety / Common Clinical Risk', specific: 'Specific Clinical Risk',
+                  psg: 'Personnel Safety Goals', osg: 'Organization Safety Goals'};
+const SEV_TH = {A: 'A — มีโอกาสเกิด (ยังไม่เกิด)', B: 'B — เกิดแล้วแต่ยังไม่ถึงผู้ป่วย', C: 'C — ถึงตัวแล้ว ไม่เป็นอันตราย',
+  D: 'D — ถึงตัวแล้ว ต้องเฝ้าระวังเพิ่ม', E: 'E — อันตรายชั่วคราว ต้องบำบัดรักษา', F: 'F — ต้องนอน รพ./นอนนานขึ้น',
+  G: 'G — อันตรายถาวร', H: 'H — ต้องช่วยชีวิต', I: 'I — เสียชีวิต',
+  1: '1 — น้อยมาก', 2: '2 — น้อย', 3: '3 — ปานกลาง', 4: '4 — สูง', 5: '5 — สูงมาก/วิกฤต'};
+const SEV_BADGE = {A: ['#e3f2fd','#0d47a1'], B: ['#e0f7f4','#00695c'], C: ['#e6f4e6','#1b5e20'],
+  D: ['#fff9c4','#795500'], E: ['#ffe0b2','#8a4500'], F: ['#ffccbc','#a03000'],
+  G: ['#bf360c','#ffffff'], H: ['#9c1414','#ffffff'], I: ['#660000','#ffffff'],
+  1: ['#e6f4e6','#1b5e20'], 2: ['#fff9c4','#795500'], 3: ['#ffe0b2','#8a4500'],
+  4: ['#bf360c','#ffffff'], 5: ['#660000','#ffffff']};
+const SEV_CHART = {A: '#7db8dc', B: '#5aa87e', C: '#8bc34a', D: '#d4c122', E: '#f0a030', F: '#e87722',
+  G: '#bf360c', H: '#9c1414', I: '#660000', 1: '#8bc34a', 2: '#d4c122', 3: '#f0a030', 4: '#bf360c', 5: '#660000'};
+
+const ALL_FIELDS = HRMS_SCHEMA.concat(CUSTOM_FIELDS.map(f => Object.assign({}, f,
+  {section: 'CF', section_title: 'ข้อมูลเพิ่มเติมของ รพ. (ตัวชี้วัดที่ รพ. เพิ่มเอง — ไม่ส่งเข้า NRLS)'})));
+const FMAP = {}, VMAP = {};
+ALL_FIELDS.forEach(f => { FMAP[f.key] = f; VMAP[f.key] = {}; (f.options || []).forEach(o => VMAP[f.key][o.v] = o.t); });
+
+// ---------- store: localStorage overlay ----------
+const LS_KEY = 'cprisk_demo_v1';
+let DB;
+function loadDB() {
+  try { const raw = localStorage.getItem(LS_KEY); if (raw) { DB = JSON.parse(raw); return; } } catch (e) {}
+  DB = JSON.parse(JSON.stringify(SEED_INCIDENTS));
+}
+function saveDB() { try { localStorage.setItem(LS_KEY, JSON.stringify(DB)); } catch (e) {} }
+function resetDemo() {
+  if (!confirm('ล้างข้อมูลที่กดเล่นไว้ กลับเป็นชุดเริ่มต้น?')) return;
+  localStorage.removeItem(LS_KEY); loadDB(); route();
+  toast('รีเซ็ตข้อมูลเดโมแล้ว');
+}
+loadDB();
+
+// ---------- helpers ----------
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const nowISO = () => { const d = new Date(), p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; };
+const thd = iso => iso ? `${iso.slice(8,10)}/${iso.slice(5,7)}/${iso.slice(0,4)}` : '—';
+const thdt = iso => iso && iso.length >= 16 ? `${thd(iso)} ${iso.slice(11,16)}` : thd(iso);
+const sevSpan = (sev, extra) => { const [bg, fg] = SEV_BADGE[sev] || ['#eceff1','#455a64'];
+  return `<span class="sev" style="background:${bg};color:${fg};${extra||''}" title="${esc(SEV_TH[sev] || 'ไม่ระบุระดับ')}">${esc(sev || '?')}</span>`; };
+const topicText = r => (VMAP['topic_' + r.group_key] || {})[r.topic] || r.topic || '—';
+const unitText = r => (VMAP.unit || {})[r.unit] || r.unit || '—';
+const getInc = id => DB.find(x => x.id === Number(id));
+function toast(msg, ms) { const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show'); clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show'), ms || 2800); }
+function getBy() { return (localStorage.getItem('cprisk_by') || '').trim(); }
+
+function addResponse(inc, action, text, by, newStatus) {
+  const now = nowISO();
+  inc.responses.push({at: now, by, action, text});
+  if (newStatus) {
+    inc.status = newStatus;
+    if (newStatus === 'ack' && !inc.ack_at) inc.ack_at = now;
+    if (newStatus === 'resolved') inc.resolved_at = now; else inc.resolved_at = null;
+  }
+  saveDB();
+}
+
+// ---------- router ----------
+function parseHash() {
+  const h = (location.hash || '#/').slice(1);
+  const [path, qs] = h.split('?');
+  const params = {};
+  (qs || '').split('&').forEach(kv => { if (!kv) return; const [k, v] = kv.split('='); params[k] = decodeURIComponent(v || ''); });
+  return {parts: path.split('/').filter(Boolean), params};
+}
+function route() {
+  const {parts, params} = parseHash();
+  const view = parts[0] || 'home';
+  document.body.classList.toggle('nrlsmode', view === 'nrls');
+  document.querySelectorAll('#mainNav a').forEach(a => a.classList.toggle('active',
+    a.dataset.nav === view || (view === 'case' && a.dataset.nav === 'inbox')));
+  window.scrollTo(0, 0);
+  if (view === 'home') renderHome();
+  else if (view === 'report') renderReport();
+  else if (view === 'inbox') renderInbox(params);
+  else if (view === 'case') renderCase(Number(parts[1]));
+  else if (view === 'nrls') renderNrls(Number(parts[1]));
+  else if (view === 'dashboard') renderDashboard();
+  else renderHome();
+  updateBell();
+}
+window.addEventListener('hashchange', route);
+
+function updateBell() {
+  const n = DB.filter(r => r.severe && r.status === 'new').length;
+  const b = document.getElementById('bellN');
+  b.style.display = n ? '' : 'none'; b.textContent = n;
+}
+
+// ---------- home ----------
+function renderHome() {
+  const counts = {new: 0, pending: 0, severeOpen: 0};
+  DB.forEach(r => { if (r.status === 'new') counts.new++;
+    if (r.status === 'ack' || r.status === 'resolving') counts.pending++;
+    if (r.severe && r.status !== 'resolved') counts.severeOpen++; });
+  document.getElementById('app').innerHTML = `
+  <div style="text-align:center;margin:6px 0 20px">
+    <h1 style="font-size:22px;color:var(--blue);margin:0 0 4px">ระบบบริหารความเสี่ยง โรงพยาบาลชุมแพ</h1>
+    <p style="color:#556;margin:0">กรอกครั้งเดียวที่ รพ. → กรรมการรับเรื่อง-ตอบกลับทันที → ตรวจทานแล้วค่อยส่งเข้าเว็บกลาง NRLS</p>
+  </div>
+  <div class="rolecards">
+    <div class="role"><div class="ic">📝</div><h3>เจ้าหน้าที่หน้างาน</h3>
+      <p>รายงานอุบัติการณ์/ความเสี่ยงที่พบ ใช้เวลาไม่เกิน 5 นาที ฟอร์มเรียงตามเว็บ NRLS — กรอกที่นี่ครั้งเดียว ไม่ต้องไปกรอกเว็บกลางเอง</p>
+      <a class="btn btn-primary" href="#/report">เริ่มรายงาน →</a></div>
+    <div class="role"><div class="ic">📥</div><h3>กรรมการความเสี่ยง</h3>
+      <p>รับเรื่อง ตอบกลับหน่วยงาน ติดตามการแก้ไขจนปิดเคส และตรวจข้อมูลก่อนกดส่งเข้า NRLS (human-in-loop)</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <span class="badge new">รายงานใหม่ ${counts.new}</span>
+        <span class="badge ack">รอดำเนินการ ${counts.pending}</span>
+        <span class="badge new">🔴 รุนแรงค้าง ${counts.severeOpen}</span></div>
+      <a class="btn btn-primary" href="#/inbox">เปิดกล่องงาน →</a></div>
+    <div class="role"><div class="ic">📊</div><h3>ผู้บริหาร / ทีมนำ</h3>
+      <p>ภาพรวมอุบัติการณ์ เวลาตอบสนอง เคสค้าง แยกรายหน่วยงาน — ตัวชี้วัดพร้อมใช้นำเสนอ HA โดยไม่ต้องขอดึงข้อมูลจากเว็บกลาง</p>
+      <a class="btn btn-primary" href="#/dashboard">เปิด Dashboard →</a></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2>ลองกดตามนี้ได้เลย (ท่าเดโมแนะนำ)</h2>
+    <ol style="margin:0;padding-left:22px;font-size:14.5px;color:#445">
+      <li>กด <b>เริ่มรายงาน</b> → กรอกเคสใหม่ เลือกระดับ E ขึ้นไป → ส่ง — สังเกตกระดิ่ง 🔔 มุมขวาบนเด้ง</li>
+      <li>เข้า <b>กล่องงานกรรมการ</b> → เปิดเคสที่เพิ่งส่ง → รับเรื่อง → บันทึกการแก้ไข → ปิดเคส</li>
+      <li>กด <b>🚀 ส่งเข้า NRLS</b> ในหน้าเคส → ดูระบบกรอกเว็บกลาง (จำลอง) ให้ทีละช่อง แล้วท่านเป็นคนกดบันทึกเอง</li>
+      <li>เปิด <b>Dashboard</b> — ตัวเลขและกราฟขยับตามที่กดไป</li>
+    </ol>
+  </div>`;
+}
+
+// ---------- report form ----------
+function renderReport() {
+  let html = `<div class="banner" style="background:#eef6fd;border-color:#bcd8ef">
+    📝 <b>บันทึกรายงานอุบัติการณ์ความเสี่ยง</b> — วันที่บันทึก ${thd(nowISO())} •
+    กรอกเท่าที่ทราบจากหน้างาน ข้อที่ไม่เกี่ยวระบบจะซ่อนให้เอง • ข้อมูลเข้าถึงกรรมการความเสี่ยงทันทีที่กดส่ง</div>
+    <form id="mainForm" onsubmit="return false">`;
+  let sec = '';
+  const todayISO = nowISO().slice(0, 10);
+  ALL_FIELDS.forEach(f => {
+    if (f.section_title !== sec) {
+      if (sec) html += '</div>';
+      sec = f.section_title;
+      html += `<div class="card"><h2>${esc(sec)}</h2>`;
+    }
+    html += `<div class="field" data-field data-key="${esc(f.key)}" data-type="${esc(f.type)}">
+      <label>${esc(f.label)}${f.required ? ' <span class="req">*</span>' : ''}</label><div>`;
+    const opts = f.options || [];
+    if (f.type === 'select' && opts.length <= 4) {
+      html += '<div class="pills" data-pills>' + opts.map(o =>
+        `<label class="pill"><input type="radio" name="rg_${esc(f.key)}" value="${esc(o.v)}"><span>${esc(o.t)}</span></label>`).join('') + '</div>';
+    } else if (f.type === 'select') {
+      html += `<select data-input><option value="">— เลือก —</option>` +
+        opts.map(o => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join('') + '</select>';
+    } else if (f.type === 'checkbox-group') {
+      html += opts.map(o => `<label style="display:block;font-weight:normal">
+        <input type="checkbox" style="width:auto" value="${esc(o.v)}"> ${esc(o.t)}</label>`).join('');
+    } else if (f.type === 'number') {
+      html += `<input type="number" data-input ${f.min != null ? `min="${f.min}"` : ''} ${f.max != null ? `max="${f.max}"` : ''}>`;
+    } else if (f.type === 'date') {
+      html += `<input type="date" data-input max="${todayISO}">`;
+    } else if (f.type === 'time') {
+      html += `<input type="time" data-input step="60">`;
+    } else if (f.type === 'textarea') {
+      html += `<textarea data-input rows="3"></textarea>`;
+    } else {
+      html += `<input type="text" data-input>`;
+    }
+    html += '</div>';
+    if (f.hint) html += `<div class="hint">${esc(f.hint)}</div>`;
+    html += '</div>';
+  });
+  if (sec) html += '</div>';
+  html += `<div class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button class="btn btn-success" id="btnSend" style="font-size:16px;padding:11px 26px">📨 ส่งรายงาน</button>
+    <span style="font-size:13px;color:#777">เคสรุนแรง (E ขึ้นไป / ระดับ 3 ขึ้นไป) จะแจ้งเตือนผู้รับผิดชอบทันที</span>
+  </div></form>`;
+  document.getElementById('app').innerHTML = html;
+
+  const SHOW_IF = {}; ALL_FIELDS.forEach(f => { if (f.show_if) SHOW_IF[f.key] = f.show_if; });
+  const fieldBox = key => document.querySelector(`[data-field][data-key="${CSS.escape(key)}"]`);
+  const valueOf = box => {
+    if (box.dataset.type === 'checkbox-group')
+      return Array.from(box.querySelectorAll('input:checked')).map(c => c.value);
+    const pills = box.querySelector('[data-pills]');
+    if (pills) { const c = pills.querySelector('input:checked'); return c ? c.value : ''; }
+    const inp = box.querySelector('[data-input]');
+    return inp ? inp.value.trim() : '';
+  };
+  document.querySelectorAll('[data-pills] input[type=radio]').forEach(r => {
+    r.addEventListener('mousedown', () => { r._was = r.checked; });
+    r.addEventListener('click', () => { if (r._was) r.checked = false;
+      r.dispatchEvent(new Event('input', {bubbles: true})); });
+  });
+  function applyConditions() {
+    for (const [key, cond] of Object.entries(SHOW_IF)) {
+      const box = fieldBox(key); if (!box) continue;
+      let show = true;
+      for (const [dep, allowed] of Object.entries(cond)) {
+        const depBox = fieldBox(dep);
+        const v = depBox ? valueOf(depBox) : '';
+        if (!allowed.includes(Array.isArray(v) ? '' : v)) { show = false; break; }
+      }
+      box.classList.toggle('hidden', !show);
+    }
+  }
+  document.getElementById('mainForm').addEventListener('input', e => {
+    applyConditions();
+    const box = e.target.closest('[data-field]');
+    if (box && box.classList.contains('missing')) {
+      const v = valueOf(box);
+      if (Array.isArray(v) ? v.length : v !== '') box.classList.remove('missing');
+    }
+  });
+  applyConditions();
+
+  document.getElementById('btnSend').onclick = () => {
+    const data = {};
+    document.querySelectorAll('[data-field]').forEach(box => {
+      if (box.classList.contains('hidden')) return;
+      const v = valueOf(box);
+      if (Array.isArray(v) ? v.length : v !== '') data[box.dataset.key] = v;
+    });
+    document.querySelectorAll('[data-field].missing').forEach(b => b.classList.remove('missing'));
+    const missing = ALL_FIELDS.filter(f => f.required).map(f => f.key).filter(k => {
+      const box = fieldBox(k);
+      return box && !box.classList.contains('hidden') && !(k in data);
+    });
+    if (missing.length) {
+      missing.forEach(k => fieldBox(k).classList.add('missing'));
+      toast(`❌ ยังไม่ได้กรอก ${missing.length} ข้อ (ช่องกรอบแดง): ` +
+        missing.slice(0, 3).map(k => FMAP[k].label).join(', ') +
+        (missing.length > 3 ? ` และอีก ${missing.length - 3} ข้อ` : ''), 6000);
+      fieldBox(missing[0]).scrollIntoView({behavior: 'smooth', block: 'center'});
+      return;
+    }
+    const od = data.occur_date || '', fd = data.found_date || '';
+    let dateErr = '';
+    if ((od && od > todayISO) || (fd && fd > todayISO)) dateErr = 'วันที่เกิดเหตุ/วันที่ค้นพบ เป็นวันในอนาคตไม่ได้';
+    else if (od && fd && fd < od) dateErr = 'วันที่ค้นพบ ต้องไม่มาก่อนวันที่เกิดอุบัติการณ์';
+    if (dateErr) {
+      const k = (fd && od && fd < od) || (fd && fd > todayISO) ? 'found_date' : 'occur_date';
+      fieldBox(k).classList.add('missing');
+      fieldBox(k).scrollIntoView({behavior: 'smooth', block: 'center'});
+      toast('❌ ' + dateErr, 5000);
+      return;
+    }
+    // สร้างเคส (เทียบ db.add_incident + derive_columns)
+    const group = data.incident_group || '';
+    const sev = group === 'osg' ? (data.severity_org || '') : (data.severity_clin || '');
+    const severe = group === 'osg' ? DEMO_CONFIG.severe_general.includes(sev)
+                                   : DEMO_CONFIG.severe_clinical.includes(sev);
+    const id = DB.reduce((m, r) => Math.max(m, r.id), 0) + 1;
+    DB.push({id, status: 'new', severe: severe ? 1 : 0, severity: sev, group_key: group,
+      topic: data['topic_' + group] || '', unit: data.unit || '', occur_date: data.occur_date || '',
+      reported_at: nowISO(), ack_at: null, resolved_at: null, nrls_status: '', nrls_at: null,
+      data, responses: []});
+    saveDB(); updateBell();
+    document.getElementById('app').innerHTML = `
+      <div class="card" style="text-align:center;padding:30px">
+        <div style="font-size:46px">✅</div>
+        <h2 style="border:none;font-size:19px">ส่งรายงานแล้ว — เลขที่เคส #${id}</h2>
+        <p style="color:#555">${severe
+          ? `ระดับความรุนแรง <b>${esc(sev)}</b> เข้าเกณฑ์เคสรุนแรง — 🔔 ระบบแจ้งเตือนกรรมการความเสี่ยงแล้ว (สังเกตกระดิ่งมุมขวาบน)`
+          : 'เคสเข้าสู่รายการของกรรมการความเสี่ยงแล้ว หน่วยงานจะได้รับการตอบกลับเมื่อรับเรื่อง'}</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap">
+          <a class="btn btn-primary" href="#/inbox">📥 ไปดูในกล่องงานกรรมการ</a>
+          <a class="btn" href="#/report" onclick="setTimeout(route)">📝 รายงานเรื่องใหม่</a>
+          <a class="btn" href="#/">กลับหน้าแรก</a>
+        </div></div>`;
+    window.scrollTo(0, 0);
+  };
+}
+
+// ---------- inbox ----------
+function renderInbox(p) {
+  const status = p.status || '', severe = p.severe === '1', q = (p.q || '').trim(), sort = p.sort === 'severe' ? 'severe' : 'new';
+  let rows = DB.filter(r => {
+    if (status && r.status !== status) return false;
+    if (severe && !(r.severe && r.status !== 'resolved')) return false;
+    if (q && !(String(r.id) === q || JSON.stringify(r.data).includes(q))) return false;
+    return true;
+  });
+  rows.sort((a, b) => sort === 'severe'
+    ? (b.severe - a.severe) || (b.reported_at || '').localeCompare(a.reported_at || '')
+    : (b.reported_at || '').localeCompare(a.reported_at || ''));
+  const counts = {all: DB.length, severe_open: DB.filter(r => r.severe && r.status !== 'resolved').length};
+  ['new','ack','resolving','resolved'].forEach(s => counts[s] = DB.filter(r => r.status === s).length);
+  const mk = (qsObj) => '#/inbox?' + Object.entries(qsObj).filter(([,v]) => v).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  const keep = {q, sort: sort !== 'new' ? sort : ''};
+  let html = `<div class="card"><div class="tabs">
+    <a class="${!status && !severe ? 'active' : ''}" href="${mk(keep)}">ทั้งหมด (${counts.all})</a>
+    <a class="hot ${severe && !status ? 'active' : ''}" href="${mk(Object.assign({severe:'1'}, keep))}">🔴 รุนแรง-ยังไม่ปิด (${counts.severe_open})</a>`;
+  [['new','🆕 รายงานใหม่'],['ack','👀 รับเรื่องแล้ว'],['resolving','🔧 กำลังแก้ไข'],['resolved','✅ ปิดเคสแล้ว']].forEach(([s, lbl]) => {
+    html += `<a class="${status === s && !severe ? 'active' : ''}" href="${mk(Object.assign({status:s}, keep))}">${lbl} (${counts[s]})</a>`;
+  });
+  html += '</div>';
+  if (severe && status) html += `<div class="banner" style="background:#fdecea;border-color:#e6b0aa;padding:8px 14px">
+    🔔 กำลังดู: <b>เคสรุนแรงที่ยังไม่รับเรื่อง</b> (จากกระดิ่งแจ้งเตือน) — <a href="#/inbox">ดูทั้งหมด</a></div>`;
+  const base = {status, severe: severe ? '1' : '', q};
+  html += `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+    <form id="searchForm" style="display:flex;gap:8px;flex:1;min-width:230px" onsubmit="return false">
+      <input id="qInput" value="${esc(q)}" placeholder="ค้นหาเลขเคส คำในรายละเอียด ชื่อยา..." style="max-width:300px">
+      <button class="btn" id="qBtn">ค้นหา</button>
+      ${q ? `<a class="btn" href="#/inbox">ล้าง</a>` : ''}
+    </form>
+    <div style="font-size:13px;color:#666;white-space:nowrap">เรียง:
+      <a href="${mk(Object.assign({}, base, {sort:''}))}" class="sortlink ${sort === 'new' ? 'on' : ''}">🕐 ล่าสุดก่อน</a> ·
+      <a href="${mk(Object.assign({}, base, {sort:'severe'}))}" class="sortlink ${sort === 'severe' ? 'on' : ''}">🔴 รุนแรงก่อน</a>
+    </div></div>
+  <div class="tablewrap"><table class="inboxtbl"><thead><tr>
+    <th style="width:64px">เคส</th><th style="width:56px">ระดับ</th><th>เรื่อง</th>
+    <th style="width:190px">หน่วยงาน</th><th style="width:126px">สถานะ</th>
+    <th style="width:104px">รายงานเมื่อ</th><th style="width:58px;text-align:center">NRLS</th></tr></thead><tbody>`;
+  if (!rows.length) {
+    html += `<tr><td colspan="7" style="text-align:center;color:#888;padding:26px">ไม่มีเคสในมุมมองนี้ — <a href="#/inbox">ล้างตัวกรองทั้งหมด</a></td></tr>`;
+  }
+  rows.forEach(r => {
+    const done = r.status === 'resolved';
+    html += `<tr class="rowlink ${done ? 'done' : ''} ${r.severe && !done ? 'hotrow' : ''}" onclick="location.hash='#/case/${r.id}'">
+      <td><a href="#/case/${r.id}">#${r.id}</a></td>
+      <td>${sevSpan(r.severity)}</td>
+      <td>${esc(topicText(r))}${r.severe && r.status === 'new' ? ' <b style="color:var(--danger);font-size:13px">● ต้องรับเรื่องด่วน</b>' : ''}</td>
+      <td style="font-size:13.5px">${esc(unitText(r))}</td>
+      <td>${done ? '<span class="chip-done">✓ ปิดแล้ว</span>' : `<span class="badge ${r.status}">${STATUS_TH[r.status]}</span>`}</td>
+      <td style="font-size:13px;color:#666" title="${esc(thdt(r.reported_at))}">${thd(r.reported_at)}</td>
+      <td style="text-align:center;font-size:13px;color:#666">${r.nrls_status ? '✓' : ''}</td></tr>`;
+  });
+  html += `</tbody></table></div>
+  <p style="font-size:12.5px;color:#888;margin:10px 0 0">แถวพื้นแดงอ่อน = รุนแรงและยังไม่ปิด • เคสที่ปิดแล้วแสดงจางลง •
+    ชี้ที่ตัวอักษรระดับเพื่อดูคำอธิบาย • คลิกที่แถวเพื่อเปิดเคส</p></div>`;
+  document.getElementById('app').innerHTML = html;
+  document.getElementById('qBtn').onclick = () => {
+    location.hash = mk(Object.assign({}, base, {q: document.getElementById('qInput').value.trim(), sort: keep.sort}));
+  };
+}
+
+// ---------- case ----------
+function renderCase(id) {
+  const inc = getInc(id);
+  if (!inc) { location.hash = '#/inbox'; return; }
+  const display = [];
+  ALL_FIELDS.forEach(f => {
+    let v = inc.data[f.key];
+    if (v == null || v === '' || (Array.isArray(v) && !v.length)) return;
+    const t = Array.isArray(v) ? v.map(x => (VMAP[f.key] || {})[x] || x).join(', ')
+                               : ((VMAP[f.key] || {})[v] || v);
+    display.push({label: f.label, value: t, section: f.section_title});
+  });
+  let sec = '', detailHtml = '';
+  display.forEach(d => {
+    if (d.section !== sec) { sec = d.section;
+      detailHtml += `<div style="font-size:13px;color:var(--blue);font-weight:600;margin:12px 0 4px;border-bottom:1px dashed var(--border);padding-bottom:3px">${esc(sec)}</div>`; }
+    detailHtml += `<div class="kv"><div style="color:#666">${esc(d.label)}</div><div>${esc(d.value)}</div></div>`;
+  });
+  let actions = '';
+  if (inc.status === 'new')
+    actions += `<button class="btn btn-primary" style="width:100%" onclick="caseAct(${id},'ack')">👀 รับเรื่อง (แจ้งกลับหน่วยงานว่ารับทราบแล้ว)</button>`;
+  if (inc.status === 'ack' || inc.status === 'resolving')
+    actions += `<label style="font-size:13.5px">บันทึกความคืบหน้า/แนวทางแก้ไข</label>
+      <textarea id="txtProgress" rows="3" style="max-width:none;margin:4px 0 8px" placeholder="เช่น ทบทวนร่วมกับหน่วยงาน กำหนดแนวทางป้องกันซ้ำ..."></textarea>
+      <button class="btn btn-primary" style="width:100%" onclick="caseAct(${id},'progress','txtProgress')">🔧 บันทึกการแก้ไข</button>
+      <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
+      <label style="font-size:13.5px">สรุปผลการแก้ไข (แจ้งกลับหน่วยงาน + เก็บเป็นหลักฐาน)</label>
+      <textarea id="txtClose" rows="3" style="max-width:none;margin:4px 0 8px" placeholder="เช่น ปรับ flow แล้ว ติดตาม 1 เดือนไม่พบเหตุซ้ำ..."></textarea>
+      <button class="btn btn-success" style="width:100%" onclick="if(confirm('ยืนยันปิดเคสนี้?\\n\\nปิดแล้วยังเปิดเคสใหม่ได้ภายหลัง (มีบันทึกลงไทม์ไลน์)'))caseAct(${id},'close','txtClose')">✅ ปิดเคส</button>`;
+  if (inc.status === 'resolved')
+    actions += `<p style="font-size:13.5px;color:var(--ok);margin:0 0 10px">เคสนี้ปิดแล้ว — ประวัติการแก้ไขอยู่ด้านล่าง</p>
+      <label style="font-size:13.5px">เหตุผลที่ต้องเปิดเคสใหม่ (ถ้ามี)</label>
+      <textarea id="txtReopen" rows="2" style="max-width:none;margin:4px 0 8px" placeholder="เช่น พบเหตุซ้ำ / ผลการแก้ไขยังไม่ครบ..."></textarea>
+      <button class="btn" style="width:100%" onclick="caseAct(${id},'reopen','txtReopen')">↩️ เปิดเคสใหม่ (กลับสู่สถานะกำลังแก้ไข)</button>`;
+  if (!inc.nrls_status && inc.status !== 'new')
+    actions += `<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
+      <a class="btn" style="width:100%;display:block;text-align:center" href="#/nrls/${id}">🚀 ส่งเข้า NRLS (เปิดเว็บจำลอง — ดูการกรอกอัตโนมัติ)</a>
+      <p style="font-size:12px;color:#888;margin:6px 0 0">เปิดหน้าเว็บ NRLS จำลอง ระบบกรอกให้ทีละช่อง แล้วกรรมการตรวจทานก่อนกดบันทึกเอง — ระบบจริงทำแบบเดียวกันบนเว็บจริง</p>`;
+  const iconMap = {ack: '👀 รับเรื่อง', progress: '🔧 ความคืบหน้า', close: '✅ ปิดเคส', nrls: '🚀 ส่ง NRLS', reopen: '↩️ เปิดเคสใหม่'};
+  const colorMap = {ack: '#c47f00', progress: '#2b7bb9', close: '#1e8e4e', nrls: '#7b5cb8', reopen: '#c0392b'};
+  const timeline = inc.responses.slice().reverse().map(r =>
+    `<div style="border-left:3px solid ${colorMap[r.action] || '#999'};padding:6px 12px;margin-bottom:8px">
+      <div style="font-size:12px;color:#888">${esc(thdt(r.at))} • ${esc(r.by)}</div>
+      <div style="font-size:14px">${iconMap[r.action] || esc(r.action)} — ${esc(r.text)}</div></div>`).join('')
+    || '<p style="font-size:13.5px;color:#888;margin:0">ยังไม่มีการดำเนินการ — เคสรอกรรมการรับเรื่อง</p>';
+  document.getElementById('app').innerHTML = `
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+    <a class="btn" href="#/inbox">← กลับรายการ</a>
+    <h1 style="font-size:18px;margin:0">เคส #${id}</h1>
+    ${sevSpan(inc.severity, 'font-size:14px')}
+    <span style="font-size:12.5px;color:#777">${esc(SEV_TH[inc.severity] || '')}</span>
+    <span class="badge ${inc.status}">${STATUS_TH[inc.status]}</span>
+    ${inc.severe ? '<span class="badge new">🔴 เข้าเกณฑ์รุนแรง</span>' : ''}
+    ${inc.nrls_status ? `<span class="badge resolved">✅ ส่ง NRLS แล้ว (จำลอง) ${thd(inc.nrls_at)}</span>` : ''}
+  </div>
+  <div class="casegrid">
+    <div><div class="card"><h2>${esc(GROUP_TH[inc.group_key] || inc.group_key)}</h2>${detailHtml}
+      <div class="kv" style="border-top:1px dashed var(--border);margin-top:8px">
+        <div style="color:#666">รายงานเข้าระบบเมื่อ</div><div>${esc(thdt(inc.reported_at))}</div></div>
+    </div></div>
+    <div>
+      <div class="card"><h2>การดำเนินการ</h2>${actions}
+        <div style="margin-top:12px">
+          <label style="font-size:12.5px;color:#666">ดำเนินการในนาม <span class="req">*</span>
+            <span style="color:#999">(ระบบจำชื่อไว้ให้ในเครื่องนี้)</span></label>
+          <input id="byName" placeholder="เช่น พว.สมหญิง ใจดี (กรรมการความเสี่ยง)" style="max-width:none;font-size:13.5px" value="${esc(getBy())}">
+        </div></div>
+      <div class="card"><h2>ไทม์ไลน์การตอบสนอง</h2>${timeline}</div>
+    </div>
+  </div>`;
+}
+function caseAct(id, action, txtId) {
+  const inc = getInc(id); if (!inc) return;
+  const text = txtId ? (document.getElementById(txtId).value || '').trim() : '';
+  const byInput = document.getElementById('byName');
+  const by = byInput.value.trim();
+  if (!by) { toast('❌ กรุณาระบุชื่อผู้ดำเนินการ (ช่อง "ดำเนินการในนาม")', 3500);
+    byInput.style.borderColor = '#d33'; byInput.focus(); return; }
+  if (action === 'progress' && !text) { toast('❌ กรุณาบันทึกความคืบหน้าการแก้ไข'); return; }
+  if (action === 'close' && !text) { toast('❌ กรุณาสรุปผลการแก้ไขก่อนปิดเคส'); return; }
+  localStorage.setItem('cprisk_by', by);
+  if (action === 'ack') addResponse(inc, 'ack', text || 'รับเรื่องแล้ว', by, 'ack');
+  else if (action === 'progress') addResponse(inc, 'progress', text, by, 'resolving');
+  else if (action === 'close') addResponse(inc, 'close', text, by, 'resolved');
+  else if (action === 'reopen') addResponse(inc, 'reopen', text || 'เปิดเคสใหม่เพื่อดำเนินการต่อ', by, 'resolving');
+  renderCase(id); updateBell();
+}
+
+// ---------- NRLS gov clone ----------
+function renderNrls(id) {
+  const inc = getInc(id);
+  if (!inc) { location.hash = '#/inbox'; return; }
+  const visible = f => {
+    if (!f.show_if) return true;
+    return Object.entries(f.show_if).every(([k, allowed]) => allowed.includes(inc.data[k]));
+  };
+  const fields = HRMS_SCHEMA.filter(visible);
+  const fill = [];
+  fields.forEach(f => {
+    let v = inc.data[f.key];
+    if (v == null || v === '' || (Array.isArray(v) && !v.length)) return;
+    if (f.type === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(v)) v = thd(v);
+    fill.push({key: f.key, type: f.type, value: v});
+  });
+  let sec = '', frm = '';
+  fields.forEach(f => {
+    if (f.section_title !== sec) { sec = f.section_title;
+      frm += `<tr><td colspan="2" style="padding:0;border:none"><div class="gov-sec">ส่วนที่ ${esc(f.section)} : ${esc(sec)}</div></td></tr>`; }
+    let inp;
+    if (f.type === 'select')
+      inp = `<select id="nf_${esc(f.key)}"><option value="">— โปรดเลือก —</option>` +
+        (f.options || []).map(o => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join('') + '</select>';
+    else if (f.type === 'textarea') inp = `<textarea id="nf_${esc(f.key)}"></textarea>`;
+    else inp = `<input type="text" id="nf_${esc(f.key)}" ${f.type === 'date' ? 'placeholder="วว/ดด/ปปปป"' : f.type === 'time' ? 'placeholder="ชช:นน"' : ''}>`;
+    frm += `<tr><td class="lbl">${esc(f.label)}${f.required ? ' <span class="req">*</span>' : ''}</td>
+      <td>${inp}${f.hint ? `<div class="hint">${esc(f.hint)}</div>` : ''}</td></tr>`;
+  });
+  document.getElementById('app').innerHTML = `
+  <div class="cprisk-bar">
+    <span class="tag">CPRISK · โหมดสาธิต</span>
+    <span style="font-size:13.5px">การส่งเคส <b>#${id}</b> เข้าเว็บ NRLS — หน้านี้คือ<b>เว็บจำลอง</b>ที่โคลนโครงฟอร์มจากเว็บจริง</span>
+    <button id="btnFill">▶ เริ่มกรอกอัตโนมัติ</button>
+    <span id="fillStatus" style="font-size:13.5px">ระบบจะกรอกข้อมูลจากฐานของ รพ. ให้ทีละช่อง — เหมือนที่ระบบจริงจะทำบนเว็บจริง</span>
+    <a href="#/case/${id}" style="margin-left:auto">← ยกเลิก กลับหน้าเคส</a>
+  </div>
+  <div class="gov-ribbon">⚠ หน้าจำลองเพื่อการพัฒนา — ไม่ได้เชื่อมต่อ cphos.thai-nrls.org จริง ไม่มีข้อมูลออกจากเครื่องนี้</div>
+  <div class="gov-header">
+    <div class="sys">🏥 HRMS on Cloud <span style="font-size:13px;font-weight:400">version 6.3 (จำลอง)</span></div>
+    <div class="sub">ระบบสารสนเทศการบริหารจัดการความเสี่ยงของสถานพยาบาล — National Reporting and Learning System</div>
+  </div>
+  <div class="gov-menu"><span>หน้าหลัก</span><span class="active">บันทึกรายงานอุบัติการณ์</span><span>รายงานสรุป</span><span>ออกจากระบบ</span></div>
+  <div class="crumb">หน้าหลัก » รายงานอุบัติการณ์ความเสี่ยง » บันทึกรายงานอุบัติการณ์ความเสี่ยง</div>
+  <div class="gov-wrap">
+    <div id="formArea">
+      <div class="form-title">📋 บันทึกรายงานอุบัติการณ์ความเสี่ยง</div>
+      <table class="frm">${frm}</table>
+      <div class="gov-foot">
+        <button class="btn-gov" id="btnSave" disabled>บันทึกรายงาน</button>
+        <span class="note" id="saveNote">ปุ่มบันทึกจะกดได้หลังระบบกรอกเสร็จ และ<b>กรรมการตรวจทานข้อมูลแล้ว</b> (human-in-loop)</span>
+      </div>
+    </div>
+    <div id="successBox" class="successBox" style="display:none">
+      <div class="ok">✅</div>
+      <h2>บันทึกรายงานอุบัติการณ์เรียบร้อยแล้ว</h2>
+      <div class="refno">เลขที่รับรายงาน (จำลอง): NRLS-${(inc.reported_at || '2569').slice(0, 4)}-${String(id).padStart(5, '0')}</div>
+      <p style="color:#556;font-size:13.5px">ระบบ CPRISK ได้บันทึกสถานะ "ส่ง NRLS แล้ว (จำลอง)" ลงไทม์ไลน์ของเคสให้เรียบร้อย<br>
+        ระบบจริง: ขั้นตอนเดียวกันนี้จะเกิดบนเว็บ cphos.thai-nrls.org โดยกรรมการเป็นคนกดบันทึกเสมอ</p>
+      <a class="btn-back" href="#/case/${id}">← กลับไปหน้าเคส #${id}</a>
+    </div>
+  </div>`;
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  let running = false;
+  async function typeInto(el, text) {
+    const step = Math.max(1, Math.ceil(text.length / 40));
+    const delay = Math.min(28, 1200 / Math.max(1, text.length / step));
+    el.value = '';
+    for (let i = 0; i < text.length; i += step) { el.value = text.slice(0, i + step); await sleep(delay); }
+    el.value = text;
+  }
+  document.getElementById('btnFill').onclick = async function () {
+    if (running) return; running = true;
+    this.disabled = true;
+    const status = document.getElementById('fillStatus');
+    let n = 0;
+    for (const f of fill) {
+      const el = document.getElementById('nf_' + f.key);
+      if (!el) continue;
+      n++;
+      status.textContent = `กำลังกรอก... ${n}/${fill.length}`;
+      el.scrollIntoView({behavior: 'smooth', block: 'center'});
+      el.classList.add('filling');
+      await sleep(320);
+      if (f.type === 'select') { el.value = f.value; await sleep(200); }
+      else await typeInto(el, String(f.value));
+      el.classList.remove('filling'); el.classList.add('filled');
+      await sleep(90);
+    }
+    status.textContent = `✅ กรอกเสร็จ ${n} รายการ — โปรดตรวจทานข้อมูล แล้วกด "บันทึกรายงาน" ท้ายฟอร์ม`;
+    const save = document.getElementById('btnSave');
+    if (inc.nrls_status) {
+      document.getElementById('saveNote').textContent = 'เคสนี้บันทึกส่ง NRLS (จำลอง) ไปแล้ว — เปิดดูซ้ำได้ แต่ไม่บันทึกซ้ำ';
+    } else {
+      save.disabled = false;
+      document.getElementById('saveNote').innerHTML = 'ตรวจทานข้อมูลด้านบนก่อน แล้วจึงกดบันทึก — <b>ระบบไม่กดปุ่มนี้แทนคน</b>';
+    }
+    save.scrollIntoView({behavior: 'smooth', block: 'center'});
+    this.textContent = '✓ กรอกแล้ว';
+  };
+  document.getElementById('btnSave').onclick = function () {
+    this.disabled = true;
+    let by = getBy();
+    if (!by) {
+      by = (prompt('ระบุชื่อผู้ดำเนินการ (จะบันทึกลงไทม์ไลน์ของเคส)') || '').trim();
+      if (!by) { this.disabled = false; return; }
+      localStorage.setItem('cprisk_by', by);
+    }
+    inc.nrls_status = 'sim'; inc.nrls_at = nowISO();
+    addResponse(inc, 'nrls', 'ส่งข้อมูลเข้าระบบ NRLS (จำลอง — โหมดเดโม)', by);
+    document.getElementById('formArea').style.display = 'none';
+    document.getElementById('successBox').style.display = 'block';
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  };
+}
+
+// ---------- dashboard ----------
+let CHARTS = [];
+function renderDashboard() {
+  CHARTS.forEach(c => c.destroy()); CHARTS = [];
+  const now = new Date();
+  const incidents = DB;
+  const total = incidents.length;
+  const severe = incidents.filter(i => i.severe);
+  const resolved = incidents.filter(i => i.status === 'resolved');
+  const ackH = [], resD = []; let ack24ok = 0, ack24n = 0;
+  const slaD = DEMO_CONFIG.sla_resolve_days;
+  const overdue = incidents.filter(i => i.status !== 'resolved' && i.reported_at &&
+    (now - new Date(i.reported_at)) / 86400000 > slaD);
+  incidents.forEach(i => {
+    if (!i.reported_at) return;
+    const rep = new Date(i.reported_at);
+    if (i.ack_at) ackH.push((new Date(i.ack_at) - rep) / 3600000);
+    if ((now - rep) / 3600000 > 24) { ack24n++;
+      if (i.ack_at && (new Date(i.ack_at) - rep) / 3600000 <= 24) ack24ok++; }
+    if (i.resolved_at) resD.push((new Date(i.resolved_at) - rep) / 86400000);
+  });
+  const median = xs => { if (!xs.length) return null; const s = xs.slice().sort((a, b) => a - b);
+    const m = s.length >> 1; return Math.round((s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2) * 10) / 10; };
+  const countBy = (fn, keys) => { const c = {}; keys.forEach(k => c[k] = 0);
+    incidents.forEach(i => { const k = fn(i); if (k in c) c[k]++; }); return c; };
+  const sevClin = countBy(i => i.group_key !== 'osg' ? i.severity : null, 'ABCDEFGHI'.split(''));
+  const sevOrg = countBy(i => i.group_key === 'osg' ? i.severity : null, ['1','2','3','4','5']);
+  const groups = countBy(i => i.group_key, Object.keys(GROUP_TH));
+  const trend = {};
+  incidents.forEach(i => { if (!i.reported_at) return; const m = i.reported_at.slice(0, 7);
+    trend[m] = trend[m] || {total: 0, severe: 0}; trend[m].total++; trend[m].severe += i.severe ? 1 : 0; });
+  const months = Object.keys(trend).sort().slice(-12);
+  const thisMonth = nowISO().slice(0, 7);
+  const trendLabels = months.map(m => m === thisMonth ? m + ' *ยังไม่จบเดือน' : m);
+  const unitStats = {};
+  incidents.forEach(i => { const u = unitText(i);
+    const s = unitStats[u] = unitStats[u] || {n: 0, severe: 0};
+    s.n++; s.severe += i.severe ? 1 : 0; });
+  const unitRows = Object.entries(unitStats).sort((a, b) => b[1].n - a[1].n).slice(0, 10);
+  const stats = [
+    [total, 'อุบัติการณ์ทั้งหมด', ''],
+    [severe.length, 'เข้าเกณฑ์รุนแรง (E–I / 3–5)', 'hot'],
+    [severe.filter(i => i.status !== 'resolved').length, 'รุนแรง-ยังไม่ปิดเคส', 'hot'],
+    [(ack24n ? Math.round(ack24ok * 100 / ack24n) : '—') + '%', 'รับเรื่องภายใน 24 ชม.', ''],
+    [median(ackH) ?? '—', 'ชม. (มัธยฐาน) รายงาน→รับเรื่อง', ''],
+    [median(resD) ?? '—', 'วัน (มัธยฐาน) รายงาน→ปิดเคส', ''],
+    [overdue.length, `ค้างเกิน ${slaD} วันยังไม่ปิด`, overdue.length ? 'hot' : ''],
+    [(total ? Math.round(resolved.length * 100 / total) : 0) + '%', `อัตราปิดเคส (${resolved.length}/${total})`, ''],
+    [incidents.filter(i => i.nrls_status).length, 'ส่งเข้า NRLS แล้ว (จำลอง)', ''],
+  ];
+  document.getElementById('app').innerHTML = `
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+    <h1 style="font-size:18px;margin:0">📊 Dashboard บริหารความเสี่ยง</h1>
+    <span style="font-size:12.5px;color:#888">(เดโม: คำนวณจากข้อมูลจำลองทั้งหมด รวมเคสที่ท่านกดเพิ่ม)</span></div>
+  <div class="kpis" style="margin-bottom:14px">${stats.map(([v, t, hot]) =>
+    `<div class="kpi ${hot}"><div class="v">${v}</div><div class="t">${t}</div></div>`).join('')}</div>
+  <p style="font-size:12.5px;color:#888;margin:-6px 0 12px">⏱ ตัวชี้วัดเวลาตอบสนอง/เคสค้าง เป็นข้อมูลที่ระบบเว็บกลางไม่มีให้ — จุดที่ระบบของ รพ. ให้เพิ่มได้</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">
+    <div class="card"><h2>ระดับความรุนแรง (Clinical A–I)</h2><canvas id="cSevClin"></canvas></div>
+    <div class="card"><h2>ระดับความรุนแรง (ทั่วไป 1–5)</h2><canvas id="cSevOrg"></canvas></div>
+    <div class="card"><h2>สัดส่วนตามกลุ่ม Safety Goals</h2><canvas id="cGroups"></canvas></div>
+  </div>
+  <div class="wide2">
+    <div class="card"><h2>แนวโน้มรายเดือน (12 เดือนล่าสุด)</h2><canvas id="cTrend"></canvas>
+      <p style="font-size:12px;color:#999;margin:8px 0 0">* เดือนล่าสุดยังไม่ครบเดือน — แท่งต่ำกว่าไม่ได้แปลว่าแนวโน้มดีขึ้นเสมอไป</p></div>
+    <div class="card"><h2>หน่วยงานที่รายงานมากที่สุด (10 อันดับ)</h2><canvas id="cUnits"></canvas></div>
+  </div>`;
+  Chart.defaults.font.family = '"Segoe UI", "Leelawadee UI", Tahoma, sans-serif';
+  Chart.defaults.font.size = 12.5;
+  const donut = (id, labels, data, colors) => CHARTS.push(new Chart(document.getElementById(id), {
+    type: 'doughnut', data: {labels, datasets: [{data, backgroundColor: colors, borderWidth: 1}]},
+    options: {plugins: {legend: {position: 'right'}}, cutout: '55%'}}));
+  const ck = Object.keys(sevClin).filter(k => sevClin[k] > 0);
+  donut('cSevClin', ck.map(k => `${k} (${sevClin[k]})`), ck.map(k => sevClin[k]), ck.map(k => SEV_CHART[k]));
+  const ok2 = Object.keys(sevOrg).filter(k => sevOrg[k] > 0);
+  donut('cSevOrg', ok2.map(k => `ระดับ ${k} (${sevOrg[k]})`), ok2.map(k => sevOrg[k]), ok2.map(k => SEV_CHART[k]));
+  const gk = Object.keys(groups).filter(k => groups[k] > 0);
+  donut('cGroups', gk.map(k => GROUP_TH[k]), gk.map(k => groups[k]), ['#2b7bb9', '#43a047', '#fb8c00', '#8e5cb8']);
+  CHARTS.push(new Chart(document.getElementById('cTrend'), {type: 'line',
+    data: {labels: trendLabels, datasets: [
+      {label: 'ทั้งหมด', data: months.map(m => trend[m].total), borderColor: '#2b7bb9', backgroundColor: 'rgba(43,123,185,.12)', fill: true, tension: .3},
+      {label: 'รุนแรง', data: months.map(m => trend[m].severe), borderColor: '#d32f2f', backgroundColor: 'rgba(211,47,47,.1)', fill: true, tension: .3}]},
+    options: {scales: {y: {beginAtZero: true}}}}));
+  CHARTS.push(new Chart(document.getElementById('cUnits'), {type: 'bar',
+    data: {labels: unitRows.map(u => u[0]), datasets: [
+      {label: 'ไม่รุนแรง', data: unitRows.map(u => u[1].n - u[1].severe), backgroundColor: '#7db8dc'},
+      {label: 'รุนแรง', data: unitRows.map(u => u[1].severe), backgroundColor: '#d32f2f'}]},
+    options: {indexAxis: 'y', scales: {x: {stacked: true, beginAtZero: true}, y: {stacked: true}}}}));
+}
+
+route();
+</script>
+</body>
+</html>
