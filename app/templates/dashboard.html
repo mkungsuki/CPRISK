@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Dashboard ผู้บริหาร — CPRISK{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+  <h1 style="font-size:18px;margin:0">📊 Dashboard บริหารความเสี่ยง</h1>
+  <span style="flex:1"></span>
+  <div class="tabs" style="margin:0">
+    {% for m, lbl in [('1', 'เดือนนี้'), ('3', '3 เดือน'), ('12', '12 เดือน'), ('all', 'ทั้งหมด')] %}
+    <a class="{{ 'active' if months == m }}" href="/dashboard?months={{ m }}">{{ lbl }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="kpis" style="margin-bottom:14px">
+  <div class="kpi"><div class="v">{{ stats.total }}</div><div class="t">อุบัติการณ์ทั้งหมด</div></div>
+  <div class="kpi hot"><div class="v">{{ stats.n_severe }}</div><div class="t">เข้าเกณฑ์รุนแรง (E–I / 3–5)</div></div>
+  <div class="kpi hot"><div class="v">{{ stats.n_open_severe }}</div><div class="t">รุนแรง-ยังไม่ปิดเคส</div></div>
+  <div class="kpi"><div class="v">{{ stats.pct_ack24 if stats.pct_ack24 is not none else '—' }}%</div><div class="t">รับเรื่องภายใน 24 ชม.</div></div>
+  <div class="kpi"><div class="v">{{ stats.med_ack_h if stats.med_ack_h is not none else '—' }}</div><div class="t">ชม. (มัธยฐาน) รายงาน→รับเรื่อง</div></div>
+  <div class="kpi"><div class="v">{{ stats.med_resolve_d if stats.med_resolve_d is not none else '—' }}</div><div class="t">วัน (มัธยฐาน) รายงาน→ปิดเคส</div></div>
+  <div class="kpi {{ 'hot' if stats.n_overdue }}"><div class="v">{{ stats.n_overdue }}</div><div class="t">ค้างเกิน {{ stats.sla_resolve_days }} วันยังไม่ปิด</div></div>
+  <div class="kpi"><div class="v">{{ stats.pct_resolved }}%</div><div class="t">อัตราปิดเคส ({{ stats.n_resolved }}/{{ stats.total }})</div></div>
+  <div class="kpi"><div class="v">{{ stats.n_nrls }}</div><div class="t">ส่งเข้า NRLS แล้ว (จำลอง)</div></div>
+</div>
+
+<p style="font-size:12.5px;color:#888;margin:-6px 0 12px">
+  ⏱ ตัวชี้วัดเวลาตอบสนอง/เคสค้าง เป็นข้อมูลที่ระบบเว็บกลางไม่มีให้ — จุดที่ระบบของ รพ. ให้เพิ่มได้</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px">
+  <div class="card"><h2>ระดับความรุนแรง (Clinical A–I)</h2><canvas id="cSevClin"></canvas></div>
+  <div class="card"><h2>ระดับความรุนแรง (ทั่วไป 1–5)</h2><canvas id="cSevOrg"></canvas></div>
+  <div class="card"><h2>สัดส่วนตามกลุ่ม Safety Goals</h2><canvas id="cGroups"></canvas></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px" class="wide2">
+  <div class="card"><h2>แนวโน้มรายเดือน (12 เดือนล่าสุด)</h2><canvas id="cTrend"></canvas></div>
+  <div class="card"><h2>หน่วยงานที่รายงานมากที่สุด (10 อันดับ)</h2><canvas id="cUnits"></canvas></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px" class="wide2">
+  <div class="card">
+    <h2>เรื่องที่พบบ่อย</h2>
+    <table>
+      <tr><th>เรื่อง</th><th style="width:70px;text-align:right">จำนวน</th></tr>
+      {% for t, n in charts.topics %}
+      <tr><td style="font-size:13.5px">{{ t }}</td><td style="text-align:right">{{ n }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div class="card">
+    <h2>สรุปรายหน่วยงาน</h2>
+    <div style="max-height:340px;overflow-y:auto">
+    <table>
+      <tr><th>หน่วยงาน</th><th style="text-align:right">ทั้งหมด</th><th style="text-align:right">รุนแรง</th>
+          <th style="text-align:right">รับเรื่อง (ชม.)</th><th style="text-align:right">ค้างเกินกำหนด</th></tr>
+      {% for r in unit_rows %}
+      <tr><td style="font-size:13.5px">{{ r.unit }}</td><td style="text-align:right">{{ r.n }}</td>
+          <td style="text-align:right;{{ 'color:var(--danger);font-weight:600' if r.severe }}">{{ r.severe or '' }}</td>
+          <td style="text-align:right">{{ r.med_ack if r.med_ack is not none else '—' }}</td>
+          <td style="text-align:right;{{ 'color:var(--danger);font-weight:600' if r.open_over }}">{{ r.open_over or '' }}</td></tr>
+      {% endfor %}
+    </table>
+    </div>
+  </div>
+</div>
+<style>@media (max-width: 900px) { .wide2 { grid-template-columns: 1fr !important; } }</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/chart.umd.js"></script>
+<script>
+const C = {{ charts | tojson }};
+Chart.defaults.font.family = '"Segoe UI", "Leelawadee UI", Tahoma, sans-serif';
+Chart.defaults.font.size = 12.5;
+
+function donut(id, labels, data, colors) {
+  new Chart(document.getElementById(id), {
+    type: 'doughnut',
+    data: {labels, datasets: [{data, backgroundColor: colors, borderWidth: 1}]},
+    options: {plugins: {legend: {position: 'right'}},
+              cutout: '55%'}
+  });
+}
+
+const clinKeys = Object.keys(C.sev_clin).filter(k => C.sev_clin[k] > 0);
+donut('cSevClin', clinKeys.map(k => `${k} (${C.sev_clin[k]})`),
+      clinKeys.map(k => C.sev_clin[k]), clinKeys.map(k => C.sev_colors[k]));
+
+const orgKeys = Object.keys(C.sev_org).filter(k => C.sev_org[k] > 0);
+donut('cSevOrg', orgKeys.map(k => `ระดับ ${k} (${C.sev_org[k]})`),
+      orgKeys.map(k => C.sev_org[k]), orgKeys.map(k => C.sev_colors[k]));
+
+const gKeys = Object.keys(C.groups);
+donut('cGroups', gKeys, gKeys.map(k => C.groups[k]),
+      ['#2b7bb9', '#43a047', '#fb8c00', '#8e5cb8']);
+
+new Chart(document.getElementById('cTrend'), {
+  type: 'line',
+  data: {labels: C.trend.labels,
+    datasets: [
+      {label: 'ทั้งหมด', data: C.trend.total, borderColor: '#2b7bb9', backgroundColor: 'rgba(43,123,185,.12)', fill: true, tension: .3},
+      {label: 'รุนแรง', data: C.trend.severe, borderColor: '#d32f2f', backgroundColor: 'rgba(211,47,47,.1)', fill: true, tension: .3}]},
+  options: {scales: {y: {beginAtZero: true}}}
+});
+
+new Chart(document.getElementById('cUnits'), {
+  type: 'bar',
+  data: {labels: C.units.map(u => u[0]),
+    datasets: [
+      {label: 'ไม่รุนแรง', data: C.units.map(u => u[1] - u[2]), backgroundColor: '#7db8dc'},
+      {label: 'รุนแรง', data: C.units.map(u => u[2]), backgroundColor: '#d32f2f'}]},
+  options: {indexAxis: 'y', scales: {x: {stacked: true, beginAtZero: true}, y: {stacked: true}}}
+});
+</script>
+{% endblock %}

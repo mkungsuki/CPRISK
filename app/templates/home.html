@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="text-align:center;padding:26px">
+  <h1 style="margin:0 0 4px;font-size:22px;color:var(--blue)">ระบบบริหารความเสี่ยง {{ config.hospital_name }}</h1>
+  <p style="color:#666;margin:0 0 4px">กรอกครั้งเดียวที่ รพ. → กรรมการรับเรื่อง-ตอบกลับทันที → ตรวจทานแล้วค่อยส่งเข้าเว็บกลาง NRLS</p>
+  <p style="color:#999;font-size:13px;margin:0">แนวคิดเดียวกับระบบ SSCC Stroke ที่ใช้งานจริงแล้ว — ขยายเป็นหลายผู้ใช้ + แจ้งเตือน + dashboard</p>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">
+  <a href="/report" class="card" style="text-decoration:none;color:inherit;display:block">
+    <div style="font-size:40px">📝</div>
+    <h2 style="border:none;padding:0;margin:6px 0 6px">เจ้าหน้าที่หน้างาน</h2>
+    <p style="margin:0;font-size:14px;color:#555">รายงานอุบัติการณ์/ความเสี่ยงที่พบ ใช้เวลาไม่เกิน 5 นาที
+       ฟอร์มเรียงตามเว็บ NRLS — กรอกที่นี่ครั้งเดียว ไม่ต้องไปกรอกเว็บกลางเอง</p>
+    <div class="btn btn-primary" style="margin-top:12px">เริ่มรายงาน →</div>
+  </a>
+  <a href="/inbox" class="card" style="text-decoration:none;color:inherit;display:block">
+    <div style="font-size:40px">📥</div>
+    <h2 style="border:none;padding:0;margin:6px 0 6px">กรรมการความเสี่ยง</h2>
+    <p style="margin:0;font-size:14px;color:#555">รับเรื่อง ตอบกลับหน่วยงาน ติดตามการแก้ไขจนปิดเคส
+       และตรวจข้อมูลก่อนกดส่งเข้า NRLS (human-in-loop)</p>
+    <div style="margin-top:12px;font-size:13.5px">
+      <span class="badge new">รายงานใหม่ {{ counts.get('new', 0) }}</span>
+      <span class="badge ack" style="margin-left:6px">รอดำเนินการ {{ counts.get('ack', 0) + counts.get('resolving', 0) }}</span>
+      {% if counts.get('severe_open') %}<span class="badge new" style="margin-left:6px">🔴 รุนแรงค้าง {{ counts.severe_open }}</span>{% endif %}
+    </div>
+  </a>
+  <a href="/dashboard" class="card" style="text-decoration:none;color:inherit;display:block">
+    <div style="font-size:40px">📊</div>
+    <h2 style="border:none;padding:0;margin:6px 0 6px">ผู้บริหาร / ทีมนำ</h2>
+    <p style="margin:0;font-size:14px;color:#555">ภาพรวมอุบัติการณ์ เวลาตอบสนอง เคสค้าง แยกรายหน่วยงาน
+       — ตัวชี้วัดพร้อมใช้นำเสนอ HA โดยไม่ต้องขอดึงข้อมูลจากเว็บกลาง</p>
+    <div class="btn" style="margin-top:12px">เปิด Dashboard →</div>
+  </a>
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h2>จุดที่พัฒนากว่าการกรอกเว็บกลางตรง</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;font-size:14px">
+    <div>⚡ <b>ตอบสนองเร็ว</b> — เคสรุนแรงเด้งถึงกรรมการทันที ไม่ต้องรอดึงรายงานจากเว็บกลาง</div>
+    <div>🔁 <b>วงจรปิด</b> — หน่วยงานเห็นว่าเรื่องที่รายงานถูกแก้อย่างไร เก็บเป็นหลักฐาน/ตัวชี้วัดใน รพ.</div>
+    <div>🧾 <b>กรอกครั้งเดียว</b> — ข้อมูลเก็บในฐานของ รพ. แล้วส่งเข้า NRLS ให้ (ตรวจทานก่อนส่งเสมอ)</div>
+    <div>🧩 <b>ขยายเองได้</b> — รพ. เพิ่มหัวข้อ/ตัวชี้วัดที่อยากเก็บเองได้จากหน้า "ฟิลด์ รพ." ไม่ต้องรอผู้พัฒนา</div>
+  </div>
+</div>
+{% endblock %}

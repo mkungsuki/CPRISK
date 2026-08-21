@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}CPRISK — บริหารความเสี่ยง รพ.ชุมแพ{% endblock %}</title>
+<style>
+:root { --blue: #1f5f8b; --accent: #2b7bb9; --bg: #f4f6f8; --border: #d7dde3;
+        --ok: #1e8e4e; --warn: #c47f00; --danger: #c0392b; }
+* { box-sizing: border-box; }
+body { font-family: "Segoe UI", "Leelawadee UI", Tahoma, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 15px; }
+header { background: var(--blue); color: #fff; padding: 8px 18px; display: flex; align-items: center; gap: 4px; position: sticky; top: 0; z-index: 50; flex-wrap: wrap; }
+header h1 { font-size: 16.5px; margin: 0 14px 0 0; font-weight: 600; white-space: nowrap; }
+header h1 a { color: #fff; text-decoration: none; }
+nav.top { display: flex; gap: 2px; flex-wrap: wrap; }
+nav.top a { color: #dcebf7; text-decoration: none; padding: 6px 11px; border-radius: 6px; font-size: 14px; white-space: nowrap; }
+nav.top a:hover { background: rgba(255,255,255,.12); }
+nav.top a.active { background: rgba(255,255,255,.2); color: #fff; }
+#bell { margin-left: auto; position: relative; color: #fff; text-decoration: none; padding: 6px 10px; font-size: 17px; }
+#bellN { position: absolute; top: 0; right: 0; background: var(--danger); color: #fff; font-size: 11px;
+         border-radius: 9px; padding: 1px 5px; display: none; }
+.demo-ribbon { background: #fff3cd; color: #7a5c00; text-align: center; font-size: 13px; padding: 4px 10px;
+               border-bottom: 1px solid #eadb9e; }
+main { max-width: 1180px; margin: 18px auto; padding: 0 14px 80px; }
+.card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; margin-bottom: 14px; }
+.card h2 { font-size: 15px; margin: 0 0 12px; color: var(--blue); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.btn { display: inline-block; border: none; border-radius: 6px; padding: 9px 18px; font-size: 15px; cursor: pointer; background: #e4e9ee; color: #222; text-decoration: none; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-success { background: var(--ok); color: #fff; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn:disabled { opacity: .5; cursor: default; }
+input, select, textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; width: 100%; max-width: 460px; background: #fff; }
+input:invalid { border-color: #d33; background: #fff6f6; }
+.field { display: grid; grid-template-columns: 330px 1fr; gap: 4px 14px; padding: 6px 0; align-items: start; }
+.field > label { padding-top: 7px; font-size: 14px; }
+.field .hint { grid-column: 2; font-size: 12.5px; color: #777; }
+.field.hidden { display: none; }
+.req { color: #d33; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { position: relative; }
+.pill input { position: absolute; opacity: 0; pointer-events: none; }
+.pill span { display: inline-block; padding: 6px 14px; border: 1px solid var(--border); border-radius: 16px; cursor: pointer; background: #fff; user-select: none; font-size: 14px; }
+.pill span:hover { border-color: var(--accent); }
+.pill input:checked + span { background: var(--accent); color: #fff; border-color: var(--accent); }
+.badge { padding: 2px 10px; border-radius: 12px; font-size: 12.5px; white-space: nowrap; }
+.badge.new { background: #fdecea; color: var(--danger); }
+.badge.ack { background: #fff3d6; color: var(--warn); }
+.badge.resolving { background: #e3f0fb; color: var(--accent); }
+.badge.resolved { background: #dff3e6; color: var(--ok); }
+.sev { display: inline-block; min-width: 26px; text-align: center; padding: 2px 8px; border-radius: 12px;
+       color: #fff; font-size: 12.5px; font-weight: 600; }
+table { border-collapse: collapse; width: 100%; background: #fff; }
+th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; font-size: 14px; }
+th { background: #eef3f7; }
+.tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.tabs a { padding: 7px 14px; border-radius: 16px; border: 1px solid var(--border); background: #fff; color: #444; text-decoration: none; font-size: 14px; }
+.tabs a.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tabs a.hot.active { background: var(--danger); border-color: var(--danger); }
+.banner { background: #fff8e6; border: 1px solid #e8c96a; border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; font-size: 14.5px; }
+#toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 22px; border-radius: 8px; opacity: 0; transition: opacity .3s; z-index: 99; }
+#toast.show { opacity: .95; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.kpi { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+.kpi .v { font-size: 24px; font-weight: 700; color: var(--blue); }
+.kpi .t { font-size: 12.5px; color: #666; margin-top: 2px; }
+.kpi.hot .v { color: var(--danger); }
+@media (max-width: 720px) { .field { grid-template-columns: 1fr; } .field .hint { grid-column: 1; } }
+</style>
+</head>
+<body>
+<header>
+  <h1><a href="/">🛡️ CPRISK</a></h1>
+  <nav class="top">
+    <a href="/report" class="{{ 'active' if request.path == '/report' }}">📝 รายงานอุบัติการณ์</a>
+    <a href="/inbox" class="{{ 'active' if request.path.startswith('/inbox') or request.path.startswith('/case') }}">📥 งานกรรมการความเสี่ยง</a>
+    <a href="/dashboard" class="{{ 'active' if request.path == '/dashboard' }}">📊 Dashboard ผู้บริหาร</a>
+    <a href="/channels" class="{{ 'active' if request.path == '/channels' }}">🔔 ช่องทางแจ้งเตือน</a>
+    <a href="/fields" class="{{ 'active' if request.path == '/fields' }}">⚙️ ฟิลด์ รพ.</a>
+  </nav>
+  <a id="bell" href="/inbox?severe=1" title="อุบัติการณ์รุนแรงที่ยังไม่รับเรื่อง">🔔<span id="bellN"></span></a>
+</header>
+{% if config.demo_mode %}
+<div class="demo-ribbon">⚠️ MOCK / DEMO — ข้อมูลทั้งหมดเป็นข้อมูลจำลอง • ปุ่มส่งเข้า NRLS เป็นการจำลอง ไม่เชื่อมต่อเว็บจริง • {{ config.hospital_name }}</div>
+{% endif %}
+<main>{% block content %}{% endblock %}</main>
+<div id="toast"></div>
+<script>
+function toast(msg, ms=2600) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+// กระดิ่งแจ้งเตือน: เคสรุนแรงที่ยังไม่รับเรื่อง (จำลอง in-app — ช่องทางจริงให้บริหารเลือกจากหน้า "ช่องทางแจ้งเตือน")
+async function pollBell() {
+  try {
+    const d = await (await fetch('/api/alerts')).json();
+    const b = document.getElementById('bellN');
+    if (d.n_new_severe > 0) { b.style.display = ''; b.textContent = d.n_new_severe; }
+    else b.style.display = 'none';
+  } catch (e) { /* เงียบ */ }
+  setTimeout(pollBell, 10000);
+}
+pollBell();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

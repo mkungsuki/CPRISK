@@ -1,0 +1,11 @@
+{
+  "port": 8548,
+  "hospital_name": "โรงพยาบาลชุมแพ",
+  "demo_mode": true,
+  "demo_seed": true,
+  "severe_clinical": ["E", "F", "G", "H", "I"],
+  "severe_general": ["3", "4", "5"],
+  "sla_ack_hours": 24,
+  "sla_resolve_days": 7,
+  "nrls_base_url": "https://cphos.thai-nrls.org"
+}

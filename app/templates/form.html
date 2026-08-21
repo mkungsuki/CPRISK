@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}รายงานอุบัติการณ์ — CPRISK{% endblock %}
+{% block content %}
+
+<div class="banner" style="background:#eef6fd;border-color:#bcd8ef">
+  📝 <b>บันทึกรายงานอุบัติการณ์ความเสี่ยง</b> — วันที่บันทึก {{ today }} •
+  กรอกเท่าที่ทราบจากหน้างาน ข้อที่ไม่เกี่ยวระบบจะซ่อนให้เอง •
+  ข้อมูลเข้าถึงกรรมการความเสี่ยงทันทีที่กดส่ง
+</div>
+
+<form id="mainForm" onsubmit="return false">
+{% set ns = namespace(sec='', idx=0) %}
+{% for f in fields %}
+  {% if f.section_title != ns.sec %}
+    {% if ns.sec %}</div>{% endif %}
+    {% set ns.sec = f.section_title %}{% set ns.idx = ns.idx + 1 %}
+    <div class="card" id="sec{{ ns.idx }}"><h2>{{ f.section_title }}</h2>
+  {% endif %}
+  {% set key = field_key(f) %}
+  {% set val = values.get(key, f.get('default', '')) %}
+  <div class="field" data-field data-key="{{ key }}" data-type="{{ f.type }}">
+    <label>{{ f.label }}{% if f.get('required') %} <span class="req">*</span>{% endif %}</label>
+    <div>
+    {% if f.type == 'select' and f.get('options', [])|length <= 4 %}
+      <div class="pills" data-pills>
+        {% for o in f.get('options', []) %}
+        <label class="pill"><input type="radio" name="rg_{{ key }}"
+               value="{{ o.v }}" {% if val == o.v %}checked{% endif %}><span>{{ o.t }}</span></label>
+        {% endfor %}
+      </div>
+    {% elif f.type == 'select' %}
+      <select data-input>
+        <option value="">— เลือก —</option>
+        {% for o in f.get('options', []) %}
+        <option value="{{ o.v }}" {% if val == o.v %}selected{% endif %}>{{ o.t }}</option>
+        {% endfor %}
+      </select>
+    {% elif f.type == 'checkbox-group' %}
+      {% for o in f.get('options', []) %}
+      <label style="display:block;font-weight:normal">
+        <input type="checkbox" style="width:auto" value="{{ o.v }}" {% if val and o.v in val %}checked{% endif %}> {{ o.t }}
+      </label>
+      {% endfor %}
+    {% elif f.type == 'number' %}
+      <input type="number" data-input value="{{ val }}"
+             {% if f.get('min') is not none %}min="{{ f.min }}"{% endif %}
+             {% if f.get('max') is not none %}max="{{ f.max }}"{% endif %}>
+    {% elif f.type == 'date' %}
+      <input type="date" data-input value="{{ val }}">
+    {% elif f.type == 'time' %}
+      <input type="time" data-input step="60" value="{{ val }}">
+    {% elif f.type == 'textarea' %}
+      <textarea data-input rows="3">{{ val }}</textarea>
+    {% else %}
+      <input type="text" data-input value="{{ val }}"
+             {% if f.get('pattern') %}pattern="{{ f.pattern }}"{% endif %}>
+    {% endif %}
+    </div>
+    {% if f.get('hint') %}<div class="hint">{{ f.hint }}</div>{% endif %}
+  </div>
+{% endfor %}
+{% if ns.sec %}</div>{% endif %}
+
+<div class="card" style="display:flex;gap:10px;align-items:center">
+  <button class="btn btn-success" id="btnSend" style="font-size:16px;padding:11px 26px">📨 ส่งรายงาน</button>
+  <span style="font-size:13px;color:#777">เคสรุนแรง (E ขึ้นไป / ระดับ 3 ขึ้นไป) จะแจ้งเตือนผู้รับผิดชอบทันที</span>
+</div>
+</form>
+
+<div class="card" id="doneCard" style="display:none;text-align:center;padding:30px">
+  <div style="font-size:46px">✅</div>
+  <h2 style="border:none;font-size:19px" id="doneTitle"></h2>
+  <p id="doneNote" style="color:#555"></p>
+  <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+    <a class="btn btn-primary" href="/report">📝 รายงานเรื่องใหม่</a>
+    <a class="btn" href="/">กลับหน้าแรก</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const SHOW_IF = {{ show_if_map | tojson }};
+const REQUIRED = {{ fields | selectattr('required') | map(attribute='key') | list | tojson }};
+const LABELS = {};
+{% for f in fields %}LABELS[{{ f.key | tojson }}] = {{ f.label | tojson }};
+{% endfor %}
+
+function fieldBox(key) { return document.querySelector(`[data-field][data-key="${CSS.escape(key)}"]`); }
+
+function valueOf(box) {
+  const type = box.dataset.type;
+  if (type === 'checkbox-group')
+    return Array.from(box.querySelectorAll('input:checked')).map(c => c.value);
+  const pills = box.querySelector('[data-pills]');
+  if (pills) {
+    const checked = pills.querySelector('input:checked');
+    return checked ? checked.value : '';
+  }
+  const inp = box.querySelector('[data-input]');
+  return inp ? inp.value.trim() : '';
+}
+
+document.querySelectorAll('[data-pills] input[type=radio]').forEach(r => {
+  r.addEventListener('mousedown', () => { r._was = r.checked; });
+  r.addEventListener('click', () => {
+    if (r._was) r.checked = false;
+    r.dispatchEvent(new Event('input', {bubbles: true}));
+  });
+});
+
+function applyConditions() {
+  for (const [key, cond] of Object.entries(SHOW_IF)) {
+    const box = fieldBox(key);
+    if (!box) continue;
+    let show = true;
+    for (const [dep, allowed] of Object.entries(cond)) {
+      const depBox = fieldBox(dep);
+      const v = depBox ? valueOf(depBox) : '';
+      if (!allowed.includes(Array.isArray(v) ? '' : v)) { show = false; break; }
+    }
+    box.classList.toggle('hidden', !show);
+  }
+}
+
+function collect() {
+  const data = {};
+  document.querySelectorAll('[data-field]').forEach(box => {
+    if (box.classList.contains('hidden')) return;
+    const v = valueOf(box);
+    if (Array.isArray(v) ? v.length : v !== '') data[box.dataset.key] = v;
+  });
+  return data;
+}
+
+document.getElementById('btnSend').onclick = async () => {
+  const data = collect();
+  // ตรวจข้อบังคับเฉพาะฟิลด์ที่ยังแสดงอยู่ (ฟิลด์ที่ถูกซ่อนตามเงื่อนไขไม่นับ)
+  const missing = REQUIRED.filter(k => {
+    const box = fieldBox(k);
+    return box && !box.classList.contains('hidden') && !(k in data);
+  });
+  if (missing.length) {
+    toast('❌ ยังไม่ได้กรอก: ' + missing.slice(0, 3).map(k => LABELS[k]).join(', ')
+          + (missing.length > 3 ? ` และอีก ${missing.length - 3} ข้อ` : ''), 4500);
+    const first = fieldBox(missing[0]);
+    first.scrollIntoView({behavior: 'smooth', block: 'center'});
+    first.style.background = '#fff6f6';
+    setTimeout(() => first.style.background = '', 2500);
+    return;
+  }
+  const res = await fetch('/report/save', {method: 'POST',
+    headers: {'Content-Type': 'application/json'}, body: JSON.stringify({data})});
+  const d = await res.json();
+  if (!d.ok) { toast('❌ ' + (d.error || 'ส่งไม่สำเร็จ')); return; }
+  document.getElementById('mainForm').style.display = 'none';
+  document.querySelector('.banner').style.display = 'none';
+  document.getElementById('doneTitle').textContent = `ส่งรายงานแล้ว — เลขที่เคส #${d.id}`;
+  document.getElementById('doneNote').innerHTML = d.severe
+    ? `ระดับความรุนแรง <b>${d.severity}</b> เข้าเกณฑ์เคสรุนแรง — 🔔 ระบบแจ้งเตือนกรรมการความเสี่ยงแล้ว (โหมดเดโม: แจ้งเตือนในระบบ)`
+    : `เคสเข้าสู่รายการของกรรมการความเสี่ยงแล้ว หน่วยงานจะได้รับการตอบกลับเมื่อรับเรื่อง`;
+  document.getElementById('doneCard').style.display = '';
+  window.scrollTo({top: 0, behavior: 'smooth'});
+};
+
+document.getElementById('mainForm').addEventListener('input', applyConditions);
+applyConditions();
+</script>
+{% endblock %}

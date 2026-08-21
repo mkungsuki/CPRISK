@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}เคส #{{ inc.id }} — CPRISK{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+  <a class="btn" href="/inbox">← กลับรายการ</a>
+  <h1 style="font-size:18px;margin:0">เคส #{{ inc.id }}</h1>
+  <span class="sev" style="background:{{ sev_meta(inc.severity) }};font-size:14px">{{ inc.severity or '?' }}</span>
+  <span class="badge {{ inc.status }}">{{ STATUS_TH[inc.status] }}</span>
+  {% if inc.severe %}<span class="badge new">🔴 เข้าเกณฑ์รุนแรง</span>{% endif %}
+  {% if inc.nrls_status %}<span class="badge resolved">✅ ส่ง NRLS แล้ว (จำลอง) {{ inc.nrls_at | thd }}</span>{% endif %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start" class="casegrid">
+<div>
+  <div class="card">
+    <h2>{{ GROUP_TH.get(inc.group_key, inc.group_key) }}</h2>
+    {% set ns = namespace(sec='') %}
+    {% for d in display %}
+      {% if d.section != ns.sec %}{% set ns.sec = d.section %}
+        <div style="font-size:13px;color:var(--blue);font-weight:600;margin:12px 0 4px;border-bottom:1px dashed var(--border);padding-bottom:3px">{{ d.section }}</div>
+      {% endif %}
+      <div style="display:grid;grid-template-columns:300px 1fr;gap:12px;padding:4px 0;font-size:14px">
+        <div style="color:#666">{{ d.label }}</div><div>{{ d.value }}</div>
+      </div>
+    {% endfor %}
+    <div style="display:grid;grid-template-columns:300px 1fr;gap:12px;padding:4px 0;font-size:14px;border-top:1px dashed var(--border);margin-top:8px">
+      <div style="color:#666">รายงานเข้าระบบเมื่อ</div><div>{{ inc.reported_at | thdt }}</div>
+    </div>
+  </div>
+</div>
+
+<div>
+  <div class="card">
+    <h2>การดำเนินการ</h2>
+    {% if inc.status == 'new' %}
+    <button class="btn btn-primary" style="width:100%" onclick="act('ack')">👀 รับเรื่อง (แจ้งกลับหน่วยงานว่ารับทราบแล้ว)</button>
+    {% endif %}
+    {% if inc.status in ('ack', 'resolving') %}
+    <label style="font-size:13.5px">บันทึกความคืบหน้า/แนวทางแก้ไข</label>
+    <textarea id="txtProgress" rows="3" style="max-width:none;margin:4px 0 8px"
+              placeholder="เช่น ทบทวนร่วมกับหน่วยงาน กำหนดแนวทางป้องกันซ้ำ..."></textarea>
+    <button class="btn btn-primary" style="width:100%" onclick="act('progress', 'txtProgress')">🔧 บันทึกการแก้ไข</button>
+    <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
+    <label style="font-size:13.5px">สรุปผลการแก้ไข (แจ้งกลับหน่วยงาน + เก็บเป็นหลักฐาน)</label>
+    <textarea id="txtClose" rows="3" style="max-width:none;margin:4px 0 8px"
+              placeholder="เช่น ปรับ flow แล้ว ติดตาม 1 เดือนไม่พบเหตุซ้ำ..."></textarea>
+    <button class="btn btn-success" style="width:100%" onclick="act('close', 'txtClose')">✅ ปิดเคส</button>
+    {% endif %}
+    {% if inc.status == 'resolved' %}
+    <p style="font-size:13.5px;color:var(--ok);margin:0">เคสนี้ปิดแล้ว — ประวัติการแก้ไขอยู่ด้านล่าง</p>
+    {% endif %}
+    {% if not inc.nrls_status and inc.status != 'new' %}
+    <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
+    <button class="btn" style="width:100%" onclick="sendNrls()">🚀 ส่งเข้า NRLS (โหมดเดโม — จำลอง)</button>
+    <p style="font-size:12px;color:#888;margin:6px 0 0">ระบบจริง: เข้าคิวเปิดเว็บ NRLS กรอกให้อัตโนมัติ
+       กรรมการตรวจทานบนเว็บก่อนกดบันทึกจริงเสมอ (แนวเดียวกับ SSCC)</p>
+    {% endif %}
+    <div style="margin-top:12px">
+      <label style="font-size:12.5px;color:#888">ดำเนินการในนาม</label>
+      <input id="byName" value="พว.ปนัดดา (กรรมการความเสี่ยง)" style="max-width:none;font-size:13.5px">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>ไทม์ไลน์การตอบสนอง</h2>
+    {% if not inc.responses %}
+    <p style="font-size:13.5px;color:#888;margin:0">ยังไม่มีการดำเนินการ — เคสรอกรรมการรับเรื่อง</p>
+    {% endif %}
+    <div style="display:flex;flex-direction:column;gap:0">
+    {% for r in inc.responses | reverse %}
+      <div style="border-left:3px solid {{ {'ack':'#c47f00','progress':'#2b7bb9','close':'#1e8e4e','nrls':'#7b5cb8'}.get(r.action, '#999') }};padding:6px 12px;margin-bottom:8px">
+        <div style="font-size:12px;color:#888">{{ r.at | thdt }} • {{ r.by }}</div>
+        <div style="font-size:14px">{{ {'ack':'👀 รับเรื่อง','progress':'🔧 ความคืบหน้า','close':'✅ ปิดเคส','nrls':'🚀 ส่ง NRLS'}.get(r.action, r.action) }} — {{ r.text }}</div>
+      </div>
+    {% endfor %}
+    </div>
+  </div>
+</div>
+</div>
+<style>@media (max-width: 900px) { .casegrid { grid-template-columns: 1fr !important; } }</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function act(action, txtId) {
+  const text = txtId ? document.getElementById(txtId).value.trim() : '';
+  const by = document.getElementById('byName').value.trim();
+  const r = await fetch('/case/{{ inc.id }}/action', {method: 'POST',
+    headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action, text, by})});
+  const d = await r.json();
+  if (!d.ok) { toast('❌ ' + d.error); return; }
+  location.reload();
+}
+function sendNrls() {
+  if (!confirm('โหมดเดโม: จำลองการส่งเข้า NRLS เท่านั้น ไม่มีข้อมูลออกจากเครื่องนี้\n\nระบบจริงจะเปิดเว็บ NRLS กรอกให้อัตโนมัติ และให้กรรมการตรวจทานก่อนกดบันทึกจริงเสมอ\n\nจำลองการส่งเลยไหม?')) return;
+  act('nrls');
+}
+</script>
+{% endblock %}

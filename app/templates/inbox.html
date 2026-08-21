@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}งานกรรมการความเสี่ยง — CPRISK{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="tabs">
+    <a class="{{ 'active' if not status_f and not severe_f }}" href="/inbox{% if q %}?q={{ q|urlencode }}{% endif %}">ทั้งหมด ({{ counts.get('all', 0) }})</a>
+    <a class="hot {{ 'active' if severe_f }}" href="/inbox?severe=1{% if q %}&q={{ q|urlencode }}{% endif %}">🔴 รุนแรง-ยังไม่ปิด ({{ counts.get('severe_open', 0) }})</a>
+    {% for s, lbl in [('new', '🆕 รายงานใหม่'), ('ack', '👀 รับเรื่องแล้ว'),
+                      ('resolving', '🔧 กำลังแก้ไข'), ('resolved', '✅ ปิดเคสแล้ว')] %}
+    <a class="{{ 'active' if status_f == s }}"
+       href="/inbox?status={{ s }}{% if q %}&q={{ q|urlencode }}{% endif %}">{{ lbl }} ({{ counts.get(s, 0) }})</a>
+    {% endfor %}
+  </div>
+  <form method="get" style="display:flex;gap:8px;margin-bottom:12px">
+    {% if status_f %}<input type="hidden" name="status" value="{{ status_f }}">{% endif %}
+    {% if severe_f %}<input type="hidden" name="severe" value="1">{% endif %}
+    <input name="q" value="{{ q }}" placeholder="ค้นหาเลขเคส คำในรายละเอียด ชื่อยา..." style="max-width:300px">
+    <button class="btn">ค้นหา</button>
+    {% if q %}<a class="btn" href="/inbox">ล้าง</a>{% endif %}
+  </form>
+  <table>
+    <tr>
+      <th style="width:64px">เคส</th><th style="width:56px">ระดับ</th><th>เรื่อง</th>
+      <th>หน่วยงาน</th><th style="width:130px">สถานะ</th><th style="width:120px">รายงานเมื่อ</th>
+      <th style="width:60px;text-align:center">NRLS</th>
+    </tr>
+    {% for r in rows %}
+    <tr {% if r.severe and r.status != 'resolved' %}style="background:#fff8f7"{% endif %}>
+      <td><a href="/case/{{ r.id }}">#{{ r.id }}</a></td>
+      <td><span class="sev" style="background:{{ sev_meta(r.severity) }}">{{ r.severity or '?' }}</span></td>
+      <td><a href="/case/{{ r.id }}" style="color:inherit;text-decoration:none">
+          {{ r.topic_t }}{% if r.severe and r.status == 'new' %} <b style="color:var(--danger)">● ต้องรับเรื่องด่วน</b>{% endif %}</a></td>
+      <td style="font-size:13.5px">{{ r.unit_t }}</td>
+      <td><span class="badge {{ r.status }}">{{ STATUS_TH[r.status] }}</span></td>
+      <td style="font-size:12.5px;color:#666">{{ r.reported_at | thdt }}</td>
+      <td style="text-align:center">{{ '✅' if r.nrls_status else '—' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" style="text-align:center;color:#888;padding:26px">ไม่มีเคสในมุมมองนี้</td></tr>
+    {% endfor %}
+  </table>
+  <p style="font-size:12.5px;color:#888;margin:10px 0 0">
+    เรียงจากเคสรุนแรงขึ้นก่อน แล้วตามเวลารายงานล่าสุด • เคสพื้นแดงอ่อน = รุนแรงและยังไม่ปิด</p>
+</div>
+{% endblock %}
