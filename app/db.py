@@ -44,6 +44,12 @@ def init():
             )""")
         c.execute("CREATE INDEX IF NOT EXISTS idx_inc_status ON incidents(status)")
         c.execute("CREATE INDEX IF NOT EXISTS idx_inc_reported ON incidents(reported_at)")
+        # migration: แหล่งที่มาของเคส — 'cprisk' = รายงานผ่านระบบ, 'import_nrls' = นำเข้าย้อนหลังจากเว็บกลาง
+        # (เคสนำเข้าไม่มีเวลารับเรื่อง/ปิดจริง ห้ามนับใน KPI เวลาตอบสนอง)
+        try:
+            c.execute("ALTER TABLE incidents ADD COLUMN source TEXT NOT NULL DEFAULT 'cprisk'")
+        except sqlite3.OperationalError:
+            pass  # มีคอลัมน์แล้ว
 
 
 def _row_to_dict(r):

@@ -11,6 +11,7 @@
   <span class="badge {{ inc.status }}">{{ STATUS_TH[inc.status] }}</span>
   {% if inc.severe %}<span class="badge new">🔴 เข้าเกณฑ์รุนแรง</span>{% endif %}
   {% if inc.nrls_status %}<span class="badge resolved">✅ ส่ง NRLS แล้ว (จำลอง) {{ inc.nrls_at | thd }}</span>{% endif %}
+  {% if inc.get('source') == 'import_nrls' %}<span class="badge" style="background:#ece7f7;color:#5b4a8a">📦 ข้อมูลย้อนหลังจาก NRLS</span>{% endif %}
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start" class="casegrid">
@@ -35,6 +36,10 @@
 <div>
   <div class="card">
     <h2>การดำเนินการ</h2>
+    {% if inc.get('source') == 'import_nrls' %}
+    <p style="font-size:13.5px;color:#5b4a8a;margin:0">เคสนี้นำเข้าจากข้อมูลย้อนหลังของเว็บกลาง NRLS —
+      เก็บเป็นประวัติ/สถิติเท่านั้น ไม่ต้องดำเนินการต่อในระบบนี้</p>
+    {% else %}
     {% if inc.status == 'new' %}
     <button class="btn btn-primary" style="width:100%" onclick="act('ack')">👀 รับเรื่อง (แจ้งกลับหน่วยงานว่ารับทราบแล้ว)</button>
     {% endif %}
@@ -69,6 +74,7 @@
       <input id="byName" placeholder="เช่น พว.สมหญิง ใจดี (กรรมการความเสี่ยง)"
              style="max-width:none;font-size:13.5px">
     </div>
+    {% endif %}
   </div>
 
   <div class="card">
@@ -99,7 +105,7 @@
 <script>
 // จำชื่อผู้ดำเนินการไว้ในเครื่อง — ไม่ default เป็นชื่อบุคคล (audit trail ต้องเป็นชื่อคนทำจริง)
 const byInput = document.getElementById('byName');
-byInput.value = localStorage.getItem('cprisk_by') || '';
+if (byInput) byInput.value = localStorage.getItem('cprisk_by') || '';
 
 async function act(action, txtId) {
   const text = txtId ? document.getElementById(txtId).value.trim() : '';

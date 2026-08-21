@@ -205,6 +205,8 @@ def case_action(inc_id):
     inc = db.get(inc_id)
     if not inc:
         return jsonify(ok=False, error="ไม่พบเคส"), 404
+    if inc.get("source") == "import_nrls":
+        return jsonify(ok=False, error="เคสนำเข้าย้อนหลังจาก NRLS เป็นประวัติ อ่านอย่างเดียว"), 400
     p = request.get_json(force=True) or {}
     action = p.get("action")
     text = str(p.get("text") or "").strip()
@@ -241,7 +243,7 @@ def case_action(inc_id):
 @app.route("/nrls-sim/<int:inc_id>")
 def nrls_sim(inc_id):
     inc = db.get(inc_id)
-    if not inc:
+    if not inc or inc.get("source") == "import_nrls":
         return redirect(url_for("inbox"))
     schema = json.loads((APP_DIR / "schema" / "hrms_fields.json").read_text(encoding="utf-8"))
     data = inc["data"]
@@ -301,6 +303,9 @@ def dashboard():
 
     ack_hours, resolve_days, ack24_ok, ack24_denom = [], [], 0, 0
     for i in incidents:
+        # เคสนำเข้าย้อนหลังจาก NRLS ไม่มีเวลารับเรื่อง/ปิดจริง — นับเฉพาะจำนวน/แนวโน้ม ไม่นับ KPI เวลาตอบสนอง
+        if i.get("source") == "import_nrls":
+            continue
         rep = datetime.fromisoformat(i["reported_at"]) if i["reported_at"] else None
         if not rep:
             continue
@@ -317,6 +322,7 @@ def dashboard():
 
     sla_d = CONFIG["sla_resolve_days"]
     overdue = [i for i in incidents if i["status"] != "resolved" and i["reported_at"]
+               and i.get("source") != "import_nrls"
                and (now - datetime.fromisoformat(i["reported_at"])).days > sla_d]
 
     def count_by(key_fn, keys):
