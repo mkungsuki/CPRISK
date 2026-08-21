@@ -16,8 +16,14 @@
   "ล่าสุดก่อน" เป็น default+สลับได้+sticky header+แถวปิดแล้วจางลง+ทั้งแถวคลิกได้, มือถือไม่ล้นจอแล้ว
   (inbox/case), ปิดเคสมี confirm+เปิดเคสใหม่ได้ (action `reopen`), กระดิ่งชี้ /inbox?severe=1&status=new,
   กราฟแนวโน้มติดป้ายเดือนยังไม่จบ, line-height 1.6
-- **มีหน้า `/qr`** — QR ชี้ https://github.com/mkungsuki/CPRISK (แก้ได้ที่ `config.json` ค่า `qr_url`)
+- **มีหน้า `/qr`** — QR ชี้ https://mkungsuki.github.io/CPRISK/ (แก้ได้ที่ `config.json` ค่า `qr_url`)
   ใช้ `static/qrcode.min.js` (qrcodejs, MIT, vendored — offline ได้)
+- **ขึ้น GitHub แล้ว**: repo public https://github.com/mkungsuki/CPRISK (ฐานข้อมูลเดโมไม่ขึ้น repo)
+  + GitHub Pages https://mkungsuki.github.io/CPRISK/ (landing สำหรับกรรมการ: แนะนำระบบ + ภาพหน้าจอ + ปุ่มเดโม)
+- **เดโมกดได้จริงบนเว็บ**: https://mkungsuki.github.io/CPRISK/demo/ (`docs/demo/index.html` — SPA browser-only
+  ครบ flow ฟอร์ม→inbox→เคส→NRLS จำลอง→dashboard, seed 383 เคสฝังใน `data.js`, สิ่งที่ผู้ชมกดเก็บ localStorage
+  รีเซ็ตได้) — **แก้แอปหลักเมื่อไร ให้เช็คว่า SPA เดโมต้องตามไปด้วยไหม** และถ้าเปลี่ยน seed/schema
+  ให้ regenerate `docs/demo/data.js` (export จาก SQLite — ดู git log commit "เดโมกดได้จริง")
 - ยังไม่แก้ (รอ P1/ตัดสินใจ): login/สิทธิ์, หน้าติดตามเคสของผู้รายงาน (ทั้งสอง review ชี้ตรงกัน — เพิ่มเข้า P1),
   export dashboard, pagination inbox, ผูก label for/id (a11y), ศัพท์กลุ่มอุบัติการณ์อังกฤษล้วน
 - เส้นตาย: มีของโชว์ "กำลังพัฒนา" ภายใน 2 วัน (ผ่านแล้ว) → **เดโมให้ HA ดูได้อาทิตย์หน้า** → ระบบจริงไม่รีบ
