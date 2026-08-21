@@ -8,6 +8,12 @@
   ข้อมูลเข้าถึงกรรมการความเสี่ยงทันทีที่กดส่ง
 </div>
 
+<style>
+.field.missing > label { color: #c0392b; font-weight: 600; }
+.field.missing > label::after { content: " — จำเป็นต้องกรอก"; font-size: 12px; font-weight: 400; }
+.field.missing input, .field.missing select, .field.missing textarea,
+.field.missing .pill span { border-color: #d33 !important; background: #fff6f6; }
+</style>
 <form id="mainForm" onsubmit="return false">
 {% set ns = namespace(sec='', idx=0) %}
 {% for f in fields %}
@@ -46,7 +52,7 @@
              {% if f.get('min') is not none %}min="{{ f.min }}"{% endif %}
              {% if f.get('max') is not none %}max="{{ f.max }}"{% endif %}>
     {% elif f.type == 'date' %}
-      <input type="date" data-input value="{{ val }}">
+      <input type="date" data-input value="{{ val }}" max="{{ today_iso }}">
     {% elif f.type == 'time' %}
       <input type="time" data-input step="60" value="{{ val }}">
     {% elif f.type == 'textarea' %}
@@ -140,13 +146,27 @@ document.getElementById('btnSend').onclick = async () => {
     const box = fieldBox(k);
     return box && !box.classList.contains('hidden') && !(k in data);
   });
+  // ไฮไลต์ค้างทุกช่องที่ขาด (หายเมื่อกรอก) — ไม่ใช่แวบเดียวแล้วหาย
+  document.querySelectorAll('[data-field].missing').forEach(b => b.classList.remove('missing'));
   if (missing.length) {
-    toast('❌ ยังไม่ได้กรอก: ' + missing.slice(0, 3).map(k => LABELS[k]).join(', ')
-          + (missing.length > 3 ? ` และอีก ${missing.length - 3} ข้อ` : ''), 4500);
-    const first = fieldBox(missing[0]);
-    first.scrollIntoView({behavior: 'smooth', block: 'center'});
-    first.style.background = '#fff6f6';
-    setTimeout(() => first.style.background = '', 2500);
+    missing.forEach(k => fieldBox(k).classList.add('missing'));
+    toast('❌ ยังไม่ได้กรอก ' + missing.length + ' ข้อ (ช่องกรอบแดง): '
+          + missing.slice(0, 3).map(k => LABELS[k]).join(', ')
+          + (missing.length > 3 ? ` และอีก ${missing.length - 3} ข้อ` : ''), 6000);
+    fieldBox(missing[0]).scrollIntoView({behavior: 'smooth', block: 'center'});
+    return;
+  }
+  // ลำดับวันที่: เกิดเหตุ ≤ ค้นพบ ≤ วันนี้
+  const todayISO = {{ today_iso | tojson }};
+  const od = data.occur_date || '', fd = data.found_date || '';
+  let dateErr = '';
+  if ((od && od > todayISO) || (fd && fd > todayISO)) dateErr = 'วันที่เกิดเหตุ/วันที่ค้นพบ เป็นวันในอนาคตไม่ได้';
+  else if (od && fd && fd < od) dateErr = 'วันที่ค้นพบ ต้องไม่มาก่อนวันที่เกิดอุบัติการณ์';
+  if (dateErr) {
+    const box = fieldBox((fd && od && fd < od) || (fd && fd > todayISO) ? 'found_date' : 'occur_date');
+    box.classList.add('missing');
+    box.scrollIntoView({behavior: 'smooth', block: 'center'});
+    toast('❌ ' + dateErr, 5000);
     return;
   }
   const res = await fetch('/report/save', {method: 'POST',
@@ -163,7 +183,14 @@ document.getElementById('btnSend').onclick = async () => {
   window.scrollTo({top: 0, behavior: 'smooth'});
 };
 
-document.getElementById('mainForm').addEventListener('input', applyConditions);
+document.getElementById('mainForm').addEventListener('input', e => {
+  applyConditions();
+  const box = e.target.closest('[data-field]');
+  if (box && box.classList.contains('missing')) {
+    const v = valueOf(box);
+    if (Array.isArray(v) ? v.length : v !== '') box.classList.remove('missing');
+  }
+});
 applyConditions();
 </script>
 {% endblock %}

@@ -4,7 +4,10 @@
 <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
   <a class="btn" href="/inbox">← กลับรายการ</a>
   <h1 style="font-size:18px;margin:0">เคส #{{ inc.id }}</h1>
-  <span class="sev" style="background:{{ sev_meta(inc.severity) }};font-size:14px">{{ inc.severity or '?' }}</span>
+  {% set sb = sev_badge(inc.severity) %}
+  <span class="sev" style="background:{{ sb.bg }};color:{{ sb.fg }};font-size:14px"
+        title="{{ SEV_TH.get(inc.severity, 'ไม่ระบุระดับ') }}">{{ inc.severity or '?' }}</span>
+  <span style="font-size:12.5px;color:#777">{{ SEV_TH.get(inc.severity, '') }}</span>
   <span class="badge {{ inc.status }}">{{ STATUS_TH[inc.status] }}</span>
   {% if inc.severe %}<span class="badge new">🔴 เข้าเกณฑ์รุนแรง</span>{% endif %}
   {% if inc.nrls_status %}<span class="badge resolved">✅ ส่ง NRLS แล้ว (จำลอง) {{ inc.nrls_at | thd }}</span>{% endif %}
@@ -19,11 +22,11 @@
       {% if d.section != ns.sec %}{% set ns.sec = d.section %}
         <div style="font-size:13px;color:var(--blue);font-weight:600;margin:12px 0 4px;border-bottom:1px dashed var(--border);padding-bottom:3px">{{ d.section }}</div>
       {% endif %}
-      <div style="display:grid;grid-template-columns:300px 1fr;gap:12px;padding:4px 0;font-size:14px">
+      <div class="kv">
         <div style="color:#666">{{ d.label }}</div><div>{{ d.value }}</div>
       </div>
     {% endfor %}
-    <div style="display:grid;grid-template-columns:300px 1fr;gap:12px;padding:4px 0;font-size:14px;border-top:1px dashed var(--border);margin-top:8px">
+    <div class="kv" style="border-top:1px dashed var(--border);margin-top:8px">
       <div style="color:#666">รายงานเข้าระบบเมื่อ</div><div>{{ inc.reported_at | thdt }}</div>
     </div>
   </div>
@@ -44,20 +47,27 @@
     <label style="font-size:13.5px">สรุปผลการแก้ไข (แจ้งกลับหน่วยงาน + เก็บเป็นหลักฐาน)</label>
     <textarea id="txtClose" rows="3" style="max-width:none;margin:4px 0 8px"
               placeholder="เช่น ปรับ flow แล้ว ติดตาม 1 เดือนไม่พบเหตุซ้ำ..."></textarea>
-    <button class="btn btn-success" style="width:100%" onclick="act('close', 'txtClose')">✅ ปิดเคส</button>
+    <button class="btn btn-success" style="width:100%" onclick="closeCase()">✅ ปิดเคส</button>
     {% endif %}
     {% if inc.status == 'resolved' %}
-    <p style="font-size:13.5px;color:var(--ok);margin:0">เคสนี้ปิดแล้ว — ประวัติการแก้ไขอยู่ด้านล่าง</p>
+    <p style="font-size:13.5px;color:var(--ok);margin:0 0 10px">เคสนี้ปิดแล้ว — ประวัติการแก้ไขอยู่ด้านล่าง</p>
+    <label style="font-size:13.5px">เหตุผลที่ต้องเปิดเคสใหม่ (ถ้ามี)</label>
+    <textarea id="txtReopen" rows="2" style="max-width:none;margin:4px 0 8px"
+              placeholder="เช่น พบเหตุซ้ำ / ผลการแก้ไขยังไม่ครบ..."></textarea>
+    <button class="btn" style="width:100%" onclick="reopenCase()">↩️ เปิดเคสใหม่ (กลับสู่สถานะกำลังแก้ไข)</button>
     {% endif %}
     {% if not inc.nrls_status and inc.status != 'new' %}
     <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
-    <button class="btn" style="width:100%" onclick="sendNrls()">🚀 ส่งเข้า NRLS (โหมดเดโม — จำลอง)</button>
-    <p style="font-size:12px;color:#888;margin:6px 0 0">ระบบจริง: เข้าคิวเปิดเว็บ NRLS กรอกให้อัตโนมัติ
-       กรรมการตรวจทานบนเว็บก่อนกดบันทึกจริงเสมอ (แนวเดียวกับ SSCC)</p>
+    <a class="btn" style="width:100%;display:block;text-align:center;box-sizing:border-box"
+       href="/nrls-sim/{{ inc.id }}">🚀 ส่งเข้า NRLS (เปิดเว็บจำลอง — ดูการกรอกอัตโนมัติ)</a>
+    <p style="font-size:12px;color:#888;margin:6px 0 0">เปิดหน้าเว็บ NRLS จำลอง ระบบกรอกให้ทีละช่อง
+       แล้วกรรมการตรวจทานก่อนกดบันทึกเอง — ระบบจริงทำแบบเดียวกันบนเว็บจริง (แนวเดียวกับ SSCC)</p>
     {% endif %}
     <div style="margin-top:12px">
-      <label style="font-size:12.5px;color:#888">ดำเนินการในนาม</label>
-      <input id="byName" value="พว.ปนัดดา (กรรมการความเสี่ยง)" style="max-width:none;font-size:13.5px">
+      <label style="font-size:12.5px;color:#666">ดำเนินการในนาม <span class="req">*</span>
+        <span style="color:#999">(ระบบจำชื่อไว้ให้ในเครื่องนี้)</span></label>
+      <input id="byName" placeholder="เช่น พว.สมหญิง ใจดี (กรรมการความเสี่ยง)"
+             style="max-width:none;font-size:13.5px">
     </div>
   </div>
 
@@ -68,32 +78,51 @@
     {% endif %}
     <div style="display:flex;flex-direction:column;gap:0">
     {% for r in inc.responses | reverse %}
-      <div style="border-left:3px solid {{ {'ack':'#c47f00','progress':'#2b7bb9','close':'#1e8e4e','nrls':'#7b5cb8'}.get(r.action, '#999') }};padding:6px 12px;margin-bottom:8px">
+      <div style="border-left:3px solid {{ {'ack':'#c47f00','progress':'#2b7bb9','close':'#1e8e4e','nrls':'#7b5cb8','reopen':'#c0392b'}.get(r.action, '#999') }};padding:6px 12px;margin-bottom:8px">
         <div style="font-size:12px;color:#888">{{ r.at | thdt }} • {{ r.by }}</div>
-        <div style="font-size:14px">{{ {'ack':'👀 รับเรื่อง','progress':'🔧 ความคืบหน้า','close':'✅ ปิดเคส','nrls':'🚀 ส่ง NRLS'}.get(r.action, r.action) }} — {{ r.text }}</div>
+        <div style="font-size:14px">{{ {'ack':'👀 รับเรื่อง','progress':'🔧 ความคืบหน้า','close':'✅ ปิดเคส','nrls':'🚀 ส่ง NRLS','reopen':'↩️ เปิดเคสใหม่'}.get(r.action, r.action) }} — {{ r.text }}</div>
       </div>
     {% endfor %}
     </div>
   </div>
 </div>
 </div>
-<style>@media (max-width: 900px) { .casegrid { grid-template-columns: 1fr !important; } }</style>
+<style>
+.kv { display: grid; grid-template-columns: 300px 1fr; gap: 12px; padding: 4px 0; font-size: 14px; }
+@media (max-width: 900px) { .casegrid { grid-template-columns: 1fr !important; } }
+/* จอเล็ก: คู่ label/ค่า ซ้อนเป็นบรรทัดเดียวกัน — กันหน้าล้นแนวนอน */
+@media (max-width: 560px) { .kv { grid-template-columns: 1fr; gap: 0; } }
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
+// จำชื่อผู้ดำเนินการไว้ในเครื่อง — ไม่ default เป็นชื่อบุคคล (audit trail ต้องเป็นชื่อคนทำจริง)
+const byInput = document.getElementById('byName');
+byInput.value = localStorage.getItem('cprisk_by') || '';
+
 async function act(action, txtId) {
   const text = txtId ? document.getElementById(txtId).value.trim() : '';
-  const by = document.getElementById('byName').value.trim();
+  const by = byInput.value.trim();
+  if (!by) {
+    toast('❌ กรุณาระบุชื่อผู้ดำเนินการ (ช่อง "ดำเนินการในนาม")', 3500);
+    byInput.style.borderColor = '#d33';
+    byInput.focus();
+    return;
+  }
   const r = await fetch('/case/{{ inc.id }}/action', {method: 'POST',
     headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action, text, by})});
   const d = await r.json();
   if (!d.ok) { toast('❌ ' + d.error); return; }
+  localStorage.setItem('cprisk_by', by);
   location.reload();
 }
-function sendNrls() {
-  if (!confirm('โหมดเดโม: จำลองการส่งเข้า NRLS เท่านั้น ไม่มีข้อมูลออกจากเครื่องนี้\n\nระบบจริงจะเปิดเว็บ NRLS กรอกให้อัตโนมัติ และให้กรรมการตรวจทานก่อนกดบันทึกจริงเสมอ\n\nจำลองการส่งเลยไหม?')) return;
-  act('nrls');
+function closeCase() {
+  if (!confirm('ยืนยันปิดเคสนี้?\n\nปิดแล้วยังเปิดเคสใหม่ได้ภายหลัง (มีบันทึกลงไทม์ไลน์)')) return;
+  act('close', 'txtClose');
+}
+function reopenCase() {
+  act('reopen', 'txtReopen');
 }
 </script>
 {% endblock %}

@@ -68,11 +68,34 @@ GROUP_TH = {"cps": "Patient Safety / Common Clinical Risk", "specific": "Specifi
 
 
 def sev_meta(sev):
-    """สี+ระดับความเด่นของ badge ตามระดับความรุนแรง"""
-    palette = {"A": "#54c1e8", "B": "#2bb5a0", "C": "#43a047", "D": "#7cb342",
-               "E": "#c0ca33", "F": "#fdd835", "G": "#fb8c00", "H": "#f4511e", "I": "#d32f2f",
-               "1": "#2bb5a0", "2": "#43a047", "3": "#fdd835", "4": "#fb8c00", "5": "#d32f2f"}
+    """สีทึบสำหรับกราฟ (Chart.js) — ไล่โทนตามความรุนแรง เขียว→ส้ม→แดง"""
+    palette = {"A": "#7db8dc", "B": "#5aa87e", "C": "#8bc34a", "D": "#d4c122",
+               "E": "#f0a030", "F": "#e87722", "G": "#bf360c", "H": "#9c1414", "I": "#660000",
+               "1": "#8bc34a", "2": "#d4c122", "3": "#f0a030", "4": "#bf360c", "5": "#660000"}
     return palette.get(sev, "#999")
+
+
+def sev_badge(sev):
+    """สี badge ระดับความรุนแรง — ระดับต่ำใช้ตัวเข้มบนพื้นอ่อน ระดับสูงพื้นเข้มตัวขาว
+    (แก้ตาม review: ชุดเดิม contrast ต่ำ และ E ที่เข้าเกณฑ์รุนแรงดันเป็นสีเขียว)"""
+    palette = {
+        "A": ("#e3f2fd", "#0d47a1"), "B": ("#e0f7f4", "#00695c"), "C": ("#e6f4e6", "#1b5e20"),
+        "D": ("#fff9c4", "#795500"), "E": ("#ffe0b2", "#8a4500"), "F": ("#ffccbc", "#a03000"),
+        "G": ("#bf360c", "#ffffff"), "H": ("#9c1414", "#ffffff"), "I": ("#660000", "#ffffff"),
+        "1": ("#e6f4e6", "#1b5e20"), "2": ("#fff9c4", "#795500"), "3": ("#ffe0b2", "#8a4500"),
+        "4": ("#bf360c", "#ffffff"), "5": ("#660000", "#ffffff"),
+    }
+    bg, fg = palette.get(sev, ("#eceff1", "#455a64"))
+    return {"bg": bg, "fg": fg}
+
+
+SEV_TH = {
+    "A": "A — มีโอกาสเกิด (ยังไม่เกิด)", "B": "B — เกิดแล้วแต่ยังไม่ถึงผู้ป่วย",
+    "C": "C — ถึงตัวแล้ว ไม่เป็นอันตราย", "D": "D — ถึงตัวแล้ว ต้องเฝ้าระวังเพิ่ม",
+    "E": "E — อันตรายชั่วคราว ต้องบำบัดรักษา", "F": "F — ต้องนอน รพ./นอนนานขึ้น",
+    "G": "G — อันตรายถาวร", "H": "H — ต้องช่วยชีวิต", "I": "I — เสียชีวิต",
+    "1": "1 — น้อยมาก", "2": "2 — น้อย", "3": "3 — ปานกลาง", "4": "4 — สูง", "5": "5 — สูงมาก/วิกฤต",
+}
 
 
 @app.template_filter("thdt")
@@ -99,7 +122,7 @@ def thd(iso):
 @app.context_processor
 def inject_globals():
     return {"config": CONFIG, "GROUP_TH": GROUP_TH, "sev_meta": sev_meta,
-            "STATUS_TH": db.STATUS_TH}
+            "sev_badge": sev_badge, "SEV_TH": SEV_TH, "STATUS_TH": db.STATUS_TH}
 
 
 # ---------- หน้าแรก: เลือกบทบาท ----------
@@ -115,7 +138,8 @@ def report_new():
     fields = load_schema()
     return render_template("form.html", fields=fields, values={},
                            field_key=field_key, show_if_map=show_if_map(fields),
-                           today=datetime.now().strftime("%d/%m/%Y"))
+                           today=datetime.now().strftime("%d/%m/%Y"),
+                           today_iso=datetime.now().strftime("%Y-%m-%d"))
 
 
 @app.route("/report/save", methods=["POST"])
@@ -125,6 +149,13 @@ def report_save():
         return jsonify(ok=False, error="กรุณากรอกรายละเอียดการเกิดเหตุ"), 400
     if not data.get("incident_group"):
         return jsonify(ok=False, error="กรุณาเลือกกลุ่มอุบัติการณ์"), 400
+    # ลำดับวันที่ต้องสมเหตุผล: เกิดเหตุ ≤ ค้นพบ ≤ วันนี้ (กัน KPI เวลาตอบสนองเพี้ยน)
+    today = datetime.now().strftime("%Y-%m-%d")
+    od, fd = data.get("occur_date") or "", data.get("found_date") or ""
+    if (od and od > today) or (fd and fd > today):
+        return jsonify(ok=False, error="วันที่เกิดเหตุ/วันที่ค้นพบ เป็นวันในอนาคตไม่ได้"), 400
+    if od and fd and fd < od:
+        return jsonify(ok=False, error="วันที่ค้นพบ ต้องไม่มาก่อนวันที่เกิดอุบัติการณ์"), 400
     inc_id = db.add_incident(data, CONFIG["severe_clinical"], CONFIG["severe_general"])
     inc = db.get(inc_id)
     return jsonify(ok=True, id=inc_id, severe=bool(inc["severe"]), severity=inc["severity"])
@@ -136,7 +167,10 @@ def inbox():
     status_f = request.args.get("status", "").strip()
     severe_f = request.args.get("severe", "") == "1"
     q = request.args.get("q", "").strip()
-    rows = db.list_incidents(status=status_f, severe_only=severe_f, q=q)
+    sort = request.args.get("sort", "new")  # new = ล่าสุดก่อน (default — กันเคสใหม่จมหาย) | severe = รุนแรงก่อน
+    if sort not in ("new", "severe"):
+        sort = "new"
+    rows = db.list_incidents(status=status_f, severe_only=severe_f, q=q, sort=sort)
     counts = db.status_counts(q)
     counts["all"] = sum(v for k, v in counts.items() if k in db.STATUS_TH)
     _, fmap, vmap = label_maps()
@@ -144,7 +178,7 @@ def inbox():
         r["unit_t"] = vmap.get(("unit", r["unit"]), r["unit"] or "—")
         r["topic_t"] = vmap.get((f"topic_{r['group_key']}", r["topic"]), r["topic"] or "—")
     return render_template("inbox.html", rows=rows, counts=counts, status_f=status_f,
-                           severe_f=severe_f, q=q)
+                           severe_f=severe_f, q=q, sort=sort)
 
 
 @app.route("/case/<int:inc_id>")
@@ -174,7 +208,10 @@ def case_action(inc_id):
     p = request.get_json(force=True) or {}
     action = p.get("action")
     text = str(p.get("text") or "").strip()
-    by = str(p.get("by") or "กรรมการความเสี่ยง").strip() or "กรรมการความเสี่ยง"
+    # ต้องระบุชื่อผู้ดำเนินการเสมอ — ห้าม default เป็นชื่อคน (audit trail ต้องเชื่อถือได้)
+    by = str(p.get("by") or "").strip()
+    if not by:
+        return jsonify(ok=False, error="กรุณาระบุชื่อผู้ดำเนินการ (ช่อง \"ดำเนินการในนาม\")"), 400
 
     if action == "ack":
         db.add_response(inc_id, "ack", text or "รับเรื่องแล้ว", by, new_status="ack")
@@ -186,6 +223,11 @@ def case_action(inc_id):
         if not text:
             return jsonify(ok=False, error="กรุณาสรุปผลการแก้ไขก่อนปิดเคส"), 400
         db.add_response(inc_id, "close", text, by, new_status="resolved")
+    elif action == "reopen":
+        if inc["status"] != "resolved":
+            return jsonify(ok=False, error="เคสนี้ยังไม่ได้ปิด"), 400
+        db.add_response(inc_id, "reopen", text or "เปิดเคสใหม่เพื่อดำเนินการต่อ", by,
+                        new_status="resolving")
     elif action == "nrls":
         # DEMO: จำลองการส่งเท่านั้น — ระบบจริงจะเข้าคิว Playwright เปิดเว็บ NRLS ให้ตรวจก่อนบันทึก (แบบ SSCC)
         db.mark_nrls_sim(inc_id)
@@ -193,6 +235,37 @@ def case_action(inc_id):
     else:
         return jsonify(ok=False, error="ไม่รู้จักคำสั่งนี้"), 400
     return jsonify(ok=True)
+
+
+# ---------- หน้าเว็บ NRLS จำลอง (โคลนโครงฟอร์มเว็บจริง — สาธิตการกรอกอัตโนมัติแบบ human-in-loop) ----------
+@app.route("/nrls-sim/<int:inc_id>")
+def nrls_sim(inc_id):
+    inc = db.get(inc_id)
+    if not inc:
+        return redirect(url_for("inbox"))
+    schema = json.loads((APP_DIR / "schema" / "hrms_fields.json").read_text(encoding="utf-8"))
+    data = inc["data"]
+
+    def visible(f):
+        cond = f.get("show_if")
+        if not cond:
+            return True
+        return all(data.get(k) in allowed for k, allowed in cond.items())
+
+    # แสดงเฉพาะฟิลด์มาตรฐาน NRLS ที่เข้าเงื่อนไขของเคสนี้ (custom fields ของ รพ. ไม่ส่งเข้า NRLS)
+    fields = [f for f in schema["fields"] if visible(f)]
+    fill = []
+    for f in fields:
+        v = data.get(f["key"])
+        if v in (None, "", []):
+            continue
+        if f["type"] == "date":
+            try:
+                v = datetime.fromisoformat(v).strftime("%d/%m/%Y")
+            except ValueError:
+                pass
+        fill.append({"key": f["key"], "type": f["type"], "value": v})
+    return render_template("nrls_sim.html", inc=inc, fields=fields, fill=fill)
 
 
 # ---------- แจ้งเตือน (จำลอง in-app) ----------
@@ -285,6 +358,10 @@ def dashboard():
         t["total"] += 1
         t["severe"] += i["severe"]
     months_sorted = sorted(trend)[-12:]
+    # ป้ายเดือนล่าสุด: ถ้ายังไม่จบเดือน ต้องบอก — กันผู้บริหารอ่านแท่งที่ต่ำกว่าว่า "ดีขึ้น" ทั้งที่เดือนยังไม่ครบ
+    trend_labels = list(months_sorted)
+    if trend_labels and trend_labels[-1] == datetime.now().strftime("%Y-%m"):
+        trend_labels[-1] += " *ยังไม่จบเดือน"
 
     top_topics = {}
     for i in incidents:
@@ -307,7 +384,7 @@ def dashboard():
         "sev_clin": sev_clin, "sev_org": sev_org,
         "groups": {GROUP_TH[k]: v for k, v in groups.items()},
         "units": [[r["unit"], r["n"], r["severe"]] for r in unit_rows[:10]],
-        "trend": {"labels": months_sorted,
+        "trend": {"labels": trend_labels,
                   "total": [trend[m]["total"] for m in months_sorted],
                   "severe": [trend[m]["severe"] for m in months_sorted]},
         "topics": top_topics,
@@ -315,6 +392,13 @@ def dashboard():
     }
     return render_template("dashboard.html", stats=stats, charts=charts,
                            unit_rows=unit_rows, months=months)
+
+
+# ---------- QR เข้า GitHub ของโปรเจกต์ (สำหรับแจกในที่ประชุม/เดโม) ----------
+@app.route("/qr")
+def qr_page():
+    return render_template("qr.html", qr_url=CONFIG.get("qr_url", ""),
+                           qr_label=CONFIG.get("qr_label", ""))
 
 
 # ---------- หน้าเสนอช่องทางแจ้งเตือน ----------

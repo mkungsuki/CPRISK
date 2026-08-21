@@ -8,7 +8,7 @@
 :root { --blue: #1f5f8b; --accent: #2b7bb9; --bg: #f4f6f8; --border: #d7dde3;
         --ok: #1e8e4e; --warn: #c47f00; --danger: #c0392b; }
 * { box-sizing: border-box; }
-body { font-family: "Segoe UI", "Leelawadee UI", Tahoma, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 15px; }
+body { font-family: "Segoe UI", "Leelawadee UI", Tahoma, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 15px; line-height: 1.6; }
 header { background: var(--blue); color: #fff; padding: 8px 18px; display: flex; align-items: center; gap: 4px; position: sticky; top: 0; z-index: 50; flex-wrap: wrap; }
 header h1 { font-size: 16.5px; margin: 0 14px 0 0; font-weight: 600; white-space: nowrap; }
 header h1 a { color: #fff; text-decoration: none; }
@@ -48,7 +48,7 @@ input:invalid { border-color: #d33; background: #fff6f6; }
 .badge.resolving { background: #e3f0fb; color: var(--accent); }
 .badge.resolved { background: #dff3e6; color: var(--ok); }
 .sev { display: inline-block; min-width: 26px; text-align: center; padding: 2px 8px; border-radius: 12px;
-       color: #fff; font-size: 12.5px; font-weight: 600; }
+       font-size: 12.5px; font-weight: 700; border: 1px solid rgba(0,0,0,.12); cursor: help; }
 table { border-collapse: collapse; width: 100%; background: #fff; }
 th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; font-size: 14px; }
 th { background: #eef3f7; }
@@ -76,8 +76,9 @@ th { background: #eef3f7; }
     <a href="/dashboard" class="{{ 'active' if request.path == '/dashboard' }}">📊 Dashboard ผู้บริหาร</a>
     <a href="/channels" class="{{ 'active' if request.path == '/channels' }}">🔔 ช่องทางแจ้งเตือน</a>
     <a href="/fields" class="{{ 'active' if request.path == '/fields' }}">⚙️ ฟิลด์ รพ.</a>
+    <a href="/qr" class="{{ 'active' if request.path == '/qr' }}">📱 QR โปรเจกต์</a>
   </nav>
-  <a id="bell" href="/inbox?severe=1" title="อุบัติการณ์รุนแรงที่ยังไม่รับเรื่อง">🔔<span id="bellN"></span></a>
+  <a id="bell" href="/inbox?severe=1&status=new" title="เคสรุนแรงที่ยังไม่รับเรื่อง — กดเพื่อเปิดรายการ">🔔<span id="bellN"></span></a>
 </header>
 {% if config.demo_mode %}
 <div class="demo-ribbon">⚠️ MOCK / DEMO — ข้อมูลทั้งหมดเป็นข้อมูลจำลอง • ปุ่มส่งเข้า NRLS เป็นการจำลอง ไม่เชื่อมต่อเว็บจริง • {{ config.hospital_name }}</div>

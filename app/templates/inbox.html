@@ -1,45 +1,95 @@
 {% extends "base.html" %}
 {% block title %}งานกรรมการความเสี่ยง — CPRISK{% endblock %}
 {% block content %}
+{% set qs_keep = ('&q=' + q|urlencode if q else '') + ('&sort=' + sort if sort != 'new' else '') %}
 <div class="card">
   <div class="tabs">
-    <a class="{{ 'active' if not status_f and not severe_f }}" href="/inbox{% if q %}?q={{ q|urlencode }}{% endif %}">ทั้งหมด ({{ counts.get('all', 0) }})</a>
-    <a class="hot {{ 'active' if severe_f }}" href="/inbox?severe=1{% if q %}&q={{ q|urlencode }}{% endif %}">🔴 รุนแรง-ยังไม่ปิด ({{ counts.get('severe_open', 0) }})</a>
+    <a class="{{ 'active' if not status_f and not severe_f }}" href="/inbox{{ ('?' + qs_keep[1:]) if qs_keep else '' }}">ทั้งหมด ({{ counts.get('all', 0) }})</a>
+    <a class="hot {{ 'active' if severe_f and not status_f }}" href="/inbox?severe=1{{ qs_keep }}">🔴 รุนแรง-ยังไม่ปิด ({{ counts.get('severe_open', 0) }})</a>
     {% for s, lbl in [('new', '🆕 รายงานใหม่'), ('ack', '👀 รับเรื่องแล้ว'),
                       ('resolving', '🔧 กำลังแก้ไข'), ('resolved', '✅ ปิดเคสแล้ว')] %}
-    <a class="{{ 'active' if status_f == s }}"
-       href="/inbox?status={{ s }}{% if q %}&q={{ q|urlencode }}{% endif %}">{{ lbl }} ({{ counts.get(s, 0) }})</a>
+    <a class="{{ 'active' if status_f == s and not severe_f }}"
+       href="/inbox?status={{ s }}{{ qs_keep }}">{{ lbl }} ({{ counts.get(s, 0) }})</a>
     {% endfor %}
   </div>
-  <form method="get" style="display:flex;gap:8px;margin-bottom:12px">
-    {% if status_f %}<input type="hidden" name="status" value="{{ status_f }}">{% endif %}
-    {% if severe_f %}<input type="hidden" name="severe" value="1">{% endif %}
-    <input name="q" value="{{ q }}" placeholder="ค้นหาเลขเคส คำในรายละเอียด ชื่อยา..." style="max-width:300px">
-    <button class="btn">ค้นหา</button>
-    {% if q %}<a class="btn" href="/inbox">ล้าง</a>{% endif %}
-  </form>
-  <table>
+
+  {% if severe_f and status_f %}
+  <div class="banner" style="background:#fdecea;border-color:#e6b0aa;padding:8px 14px">
+    🔔 กำลังดู: <b>เคสรุนแรงที่ยังไม่รับเรื่อง</b> (จากกระดิ่งแจ้งเตือน) — <a href="/inbox">ดูทั้งหมด</a>
+  </div>
+  {% endif %}
+
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+    <form method="get" style="display:flex;gap:8px;flex:1;min-width:230px">
+      {% if status_f %}<input type="hidden" name="status" value="{{ status_f }}">{% endif %}
+      {% if severe_f %}<input type="hidden" name="severe" value="1">{% endif %}
+      {% if sort != 'new' %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+      <input name="q" value="{{ q }}" placeholder="ค้นหาเลขเคส คำในรายละเอียด ชื่อยา..." style="max-width:300px">
+      <button class="btn">ค้นหา</button>
+      {% if q %}<a class="btn" href="/inbox">ล้าง</a>{% endif %}
+    </form>
+    <div style="font-size:13px;color:#666;white-space:nowrap">
+      เรียง:
+      {% set base_qs = ('status=' + status_f + '&' if status_f else '') + ('severe=1&' if severe_f else '') + ('q=' + q|urlencode + '&' if q else '') %}
+      <a href="/inbox?{{ base_qs }}sort=new" class="sortlink {{ 'on' if sort == 'new' }}">🕐 ล่าสุดก่อน</a> ·
+      <a href="/inbox?{{ base_qs }}sort=severe" class="sortlink {{ 'on' if sort == 'severe' }}">🔴 รุนแรงก่อน</a>
+    </div>
+  </div>
+
+  <div class="tablewrap">
+  <table class="inboxtbl">
+    <thead>
     <tr>
       <th style="width:64px">เคส</th><th style="width:56px">ระดับ</th><th>เรื่อง</th>
-      <th>หน่วยงาน</th><th style="width:130px">สถานะ</th><th style="width:120px">รายงานเมื่อ</th>
-      <th style="width:60px;text-align:center">NRLS</th>
+      <th style="width:190px">หน่วยงาน</th><th style="width:126px">สถานะ</th>
+      <th style="width:104px">รายงานเมื่อ</th><th style="width:58px;text-align:center">NRLS</th>
     </tr>
+    </thead>
+    <tbody>
     {% for r in rows %}
-    <tr {% if r.severe and r.status != 'resolved' %}style="background:#fff8f7"{% endif %}>
+    {% set done = r.status == 'resolved' %}
+    <tr class="rowlink {{ 'done' if done }} {{ 'hotrow' if r.severe and not done }}"
+        onclick="location='/case/{{ r.id }}'">
       <td><a href="/case/{{ r.id }}">#{{ r.id }}</a></td>
-      <td><span class="sev" style="background:{{ sev_meta(r.severity) }}">{{ r.severity or '?' }}</span></td>
-      <td><a href="/case/{{ r.id }}" style="color:inherit;text-decoration:none">
-          {{ r.topic_t }}{% if r.severe and r.status == 'new' %} <b style="color:var(--danger)">● ต้องรับเรื่องด่วน</b>{% endif %}</a></td>
-      <td style="font-size:13.5px">{{ r.unit_t }}</td>
-      <td><span class="badge {{ r.status }}">{{ STATUS_TH[r.status] }}</span></td>
-      <td style="font-size:12.5px;color:#666">{{ r.reported_at | thdt }}</td>
-      <td style="text-align:center">{{ '✅' if r.nrls_status else '—' }}</td>
+      <td>{% set sb = sev_badge(r.severity) %}
+          <span class="sev" style="background:{{ sb.bg }};color:{{ sb.fg }}"
+                title="{{ SEV_TH.get(r.severity, 'ไม่ระบุระดับ') }}">{{ r.severity or '?' }}</span></td>
+      <td>{{ r.topic_t }}{% if r.severe and r.status == 'new' %} <b style="color:var(--danger);font-size:13px">● ต้องรับเรื่องด่วน</b>{% endif %}</td>
+      <td class="mut" style="font-size:13.5px">{{ r.unit_t }}</td>
+      <td>{% if done %}<span class="chip-done">✓ ปิดแล้ว</span>
+          {% else %}<span class="badge {{ r.status }}">{{ STATUS_TH[r.status] }}</span>{% endif %}</td>
+      <td class="mut" style="font-size:13px" title="{{ r.reported_at | thdt }}">{{ r.reported_at | thd }}</td>
+      <td style="text-align:center;font-size:13px" class="mut">{{ '✓' if r.nrls_status else '' }}</td>
     </tr>
     {% else %}
-    <tr><td colspan="7" style="text-align:center;color:#888;padding:26px">ไม่มีเคสในมุมมองนี้</td></tr>
+    <tr><td colspan="7" style="text-align:center;color:#888;padding:26px">
+      ไม่มีเคสในมุมมองนี้ — <a href="/inbox">ล้างตัวกรองทั้งหมด</a></td></tr>
     {% endfor %}
+    </tbody>
   </table>
+  </div>
   <p style="font-size:12.5px;color:#888;margin:10px 0 0">
-    เรียงจากเคสรุนแรงขึ้นก่อน แล้วตามเวลารายงานล่าสุด • เคสพื้นแดงอ่อน = รุนแรงและยังไม่ปิด</p>
+    แถวพื้นแดงอ่อน = รุนแรงและยังไม่ปิด • เคสที่ปิดแล้วแสดงจางลง • ชี้ที่ตัวอักษรระดับเพื่อดูคำอธิบาย •
+    คลิกที่แถวเพื่อเปิดเคส</p>
 </div>
+
+<style>
+.sortlink { color: #666; text-decoration: none; padding: 2px 6px; border-radius: 10px; }
+.sortlink.on { background: var(--accent); color: #fff; }
+.inboxtbl tbody tr.rowlink { cursor: pointer; }
+.inboxtbl tbody tr.rowlink:hover { background: #eef5fb !important; }
+.inboxtbl tbody tr.hotrow { background: #fff8f7; }
+.inboxtbl tbody tr.done td, .inboxtbl tbody tr.done td a { color: #98a0a8; }
+.inboxtbl tbody tr.done .sev { opacity: .6; }
+.chip-done { color: #7a8790; font-size: 12.5px; border: 1px solid #cfd6db; border-radius: 12px; padding: 1px 9px; white-space: nowrap; }
+.inboxtbl td { border-left: none; border-right: none; }
+.inboxtbl th { border-left: none; border-right: none; }
+@media (min-width: 761px) {
+  .inboxtbl thead th { position: sticky; top: 46px; z-index: 5; box-shadow: 0 1px 0 var(--border); }
+}
+@media (max-width: 760px) {
+  .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -18px; padding: 0 18px; }
+  .inboxtbl { min-width: 680px; }
+}
+</style>
 {% endblock %}

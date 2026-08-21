@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}QR โปรเจกต์ — CPRISK{% endblock %}
+{% block content %}
+<div class="card" style="max-width:560px;margin:30px auto;text-align:center;padding:30px 24px">
+  <h1 style="font-size:19px;margin:0 0 6px">📱 สแกนเพื่อเปิดหน้าโปรเจกต์ CPRISK</h1>
+  <p style="color:#666;font-size:14px;margin:0 0 20px">{{ qr_label }}</p>
+  <div id="qrbox" style="display:inline-block;background:#fff;padding:18px;border:1px solid var(--border);border-radius:10px"></div>
+  <div style="margin-top:14px">
+    <a href="{{ qr_url }}" target="_blank" rel="noopener"
+       style="font-size:15px;word-break:break-all">{{ qr_url }}</a>
+  </div>
+  <p style="color:#999;font-size:12.5px;margin-top:18px">
+    สำหรับแจกในที่ประชุม/เดโม — กรรมการสแกนแล้วเปิดดูเอกสารและความคืบหน้าของระบบได้เอง<br>
+    เปลี่ยนลิงก์ได้ที่ <code>app/config.json</code> (ค่า <code>qr_url</code>)
+  </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/qrcode.min.js"></script>
+<script>
+new QRCode(document.getElementById('qrbox'), {
+  text: {{ qr_url | tojson }},
+  width: 260, height: 260,
+  correctLevel: QRCode.CorrectLevel.M
+});
+</script>
+{% endblock %}

@@ -86,7 +86,7 @@ def get(inc_id):
         return _row_to_dict(r) if r else None
 
 
-def list_incidents(status="", severe_only=False, q=""):
+def list_incidents(status="", severe_only=False, q="", sort="severe"):
     sql = "SELECT * FROM incidents WHERE 1=1"
     args = []
     if status:
@@ -97,7 +97,11 @@ def list_incidents(status="", severe_only=False, q=""):
     if q:
         sql += " AND (data LIKE ? OR CAST(id AS TEXT) = ?)"
         args += [f"%{q}%", q]
-    sql += " ORDER BY severe DESC, reported_at DESC"
+    # sort="new" = ล่าสุดก่อน (กันเคสใหม่ระดับเบาจมใต้เคสรุนแรงเก่า) | "severe" = รุนแรงก่อน
+    if sort == "new":
+        sql += " ORDER BY reported_at DESC"
+    else:
+        sql += " ORDER BY severe DESC, reported_at DESC"
     with _conn() as c:
         return [_row_to_dict(r) for r in c.execute(sql, args).fetchall()]
 
@@ -134,6 +138,9 @@ def add_response(inc_id, action, text, by, new_status=None, at=None):
         if new_status == "resolved":
             sets.append("resolved_at = ?")
             args.append(now)
+        else:
+            # กลับสู่สถานะยังไม่ปิด (เช่น reopen) — เวลาปิดเคสเดิมต้องถูกล้าง ไม่งั้น KPI นับผิด
+            sets.append("resolved_at = NULL")
     args.append(inc_id)
     with _conn() as c:
         c.execute(f"UPDATE incidents SET {', '.join(sets)} WHERE id = ?", args)
