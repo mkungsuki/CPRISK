@@ -56,6 +56,19 @@
 - Port 8548 (`app/config.json`) — เปิดด้วย `app/start.bat` หรือ `python app/server.py`
 - ภาษา UI ไทยทั้งหมด กลุ่มเป้าหมายคือคนหน้างาน ไม่ใช่คนไอที — ทุกข้อความต้องอ่านรู้เรื่องโดยไม่ต้องอธิบาย
 
+## ข้อสรุปเรื่องเว็บกลาง HRMS (สำรวจจริงแล้ว 2026-08-21 — ล็อกแล้ว ห้าม re-debate)
+
+- **ไม่มี API / ไม่มีช่องดึงข้อมูล** — cphos.thai-nrls.org เป็น iframe ครอบ hrms127.thai-nrls.org/HRMS10998
+  (ASP.NET MVC + jQuery + SweetAlert, ทำโดย RelationSoft ให้ สรพ.) ทุกอย่างอยู่หลัง login
+- ทิศทางข้อมูลคือ **one-way push**: CPRISK เป็น system of record → Playwright กรอกเข้าเว็บจริงแบบ
+  human-in-loop (คนกดยืนยัน SweetAlert เอง) — ไม่ต้องมี "ตัวกลาง form" และไม่ดึงข้อมูลกลับ
+- **เก็บพิมพ์เขียวฟอร์มจริงครบแล้ว** ใน `_capture/` (อ่าน `_capture/hrms-form-blueprint.md` ก่อนเริ่ม P1):
+  โครงฟอร์ม 23 ฟิลด์ + ตัวเลือกทุก dropdown + บัญชีอุบัติการณ์ 321 รหัส (taxonomy แงะแล้ว) + นิยามระดับรุนแรง
+  — **`_capture/` อยู่ใน .gitignore ห้าม push** (มีรายชื่อ 124 หน่วยงานภายใน รพ.)
+- ฟอร์มจริงง่ายกว่าที่กลัว: native controls ล้วน จุดพิเศษมี 3 จุด (cascade ddlSubRisk, สลับ A–I/1–5 ตามกลุ่มรหัส,
+  SweetAlert) — ช่องว่างที่ CPRISK ต้องเพิ่มตอน P1 ดูหัวข้อ 3 ใน blueprint
+- flow หลังส่งของเว็บจริงมีขั้น "ยืนยัน" (RiskBookingList: รอยืนยัน→ยืนยันแล้ว→หน่วยงานหลัก→กรรมการ)
+
 ## แผน P1 (ระบบจริง — เรียงตามลำดับ)
 
 1. **ยิงเข้า NRLS จริง**: เขียน `fill_hrms.py` ตาม pattern `C:\SSCC\app\fill_sscc.py`
