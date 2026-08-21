@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>CPRISK — ระบบบริหารความเสี่ยง รพ.ชุมแพ</title>
+<style>
+  :root { --blue: #1f5f8b; --accent: #2b7bb9; --bg: #f4f6f8; --border: #d7dde3; --ok: #1e8e4e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", "Leelawadee UI", Tahoma, sans-serif; background: var(--bg);
+         color: #223; font-size: 16px; line-height: 1.7; }
+  .hero { background: linear-gradient(160deg, #1f5f8b, #163a5f); color: #fff; padding: 52px 20px 46px; text-align: center; }
+  .hero h1 { font-size: clamp(26px, 5vw, 38px); margin: 0 0 6px; }
+  .hero p.tag { font-size: clamp(15px, 2.6vw, 18px); color: #cfe3f3; margin: 0 auto 18px; max-width: 640px; }
+  .chip { display: inline-block; background: #ffb300; color: #4a3600; border-radius: 20px;
+          padding: 5px 16px; font-size: 13.5px; font-weight: 700; margin: 4px; }
+  .chip.ghost { background: rgba(255,255,255,.15); color: #dcebf7; font-weight: 400; }
+  main { max-width: 1000px; margin: 0 auto; padding: 30px 18px 70px; }
+  h2 { color: var(--blue); font-size: 21px; margin: 42px 0 14px; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+  .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+  .step { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 18px; position: relative; }
+  .step .n { position: absolute; top: -13px; right: 14px; background: var(--accent); color: #fff;
+             width: 27px; height: 27px; border-radius: 50%; text-align: center; line-height: 27px; font-weight: 700; font-size: 14px; }
+  .step b { color: var(--blue); }
+  .step p { margin: 6px 0 0; font-size: 14.5px; color: #445; }
+  .points { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .pt { background: #fff; border: 1px solid var(--border); border-left: 4px solid var(--accent);
+        border-radius: 8px; padding: 13px 16px; font-size: 15px; }
+  .shot { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 22px; }
+  .shot img { width: 100%; border: 1px solid var(--border); border-radius: 6px; display: block; }
+  .shot .cap { font-size: 14.5px; color: #445; margin-top: 10px; }
+  .shot .cap b { color: var(--blue); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+  .note { background: #fff8e6; border: 1px solid #e8c96a; border-radius: 8px; padding: 13px 17px; font-size: 14.5px; }
+  ul.plan { padding-left: 22px; margin: 8px 0; }
+  ul.plan li { margin-bottom: 6px; font-size: 15px; }
+  a { color: var(--accent); }
+  .btnrow { text-align: center; margin-top: 26px; }
+  .btn { display: inline-block; background: var(--accent); color: #fff; text-decoration: none;
+         border-radius: 8px; padding: 11px 26px; font-size: 15.5px; margin: 5px; }
+  .btn.gray { background: #5c6b78; }
+  footer { text-align: center; color: #8895a0; font-size: 13px; padding: 26px 16px 40px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🛡️ CPRISK</h1>
+  <p class="tag">ระบบบริหารความเสี่ยงของโรงพยาบาลชุมแพ<br>
+     กรอกครั้งเดียวที่ รพ. — กรรมการตอบสนองทันที — ตรวจทานแล้วจึงส่งเข้าเว็บกลาง NRLS</p>
+  <span class="chip">🚧 สถานะ: MOCK / DEMO — กำลังพัฒนา</span>
+  <span class="chip ghost">ภาพทั้งหมดในหน้านี้เป็นข้อมูลจำลอง ไม่มีข้อมูลผู้ป่วยจริง</span>
+</div>
+
+<main>
+
+<h2>ระบบทำงานอย่างไร</h2>
+<div class="flow">
+  <div class="step"><span class="n">1</span><b>📝 หน้างานรายงาน</b>
+    <p>เจ้าหน้าที่ทุกหน่วยกรอกอุบัติการณ์ในฟอร์มเดียว จบใน ~5 นาที
+       ฟอร์มเรียงตามโครงเว็บ NRLS จริง รายงานแบบไม่ระบุตัวตนได้</p></div>
+  <div class="step"><span class="n">2</span><b>📥 กรรมการรับเรื่อง-ตอบกลับ</b>
+    <p>เคสรุนแรงแจ้งเตือนทันที กรรมการรับเรื่อง บันทึกการแก้ไข
+       และปิดเคสพร้อมไทม์ไลน์ — หน่วยงานเห็นว่าเรื่องที่รายงานถูกแก้อย่างไร</p></div>
+  <div class="step"><span class="n">3</span><b>🚀 ส่งเข้า NRLS แบบตรวจทานก่อน</b>
+    <p>ระบบเปิดเว็บกลางแล้วกรอกให้อัตโนมัติทีละช่อง
+       <u>กรรมการตรวจทานและเป็นคนกดบันทึกเองเสมอ</u> (human-in-loop)</p></div>
+</div>
+
+<h2>จุดที่พัฒนากว่าการกรอกเว็บกลางโดยตรง</h2>
+<div class="points">
+  <div class="pt">⚡ <b>ตอบสนองเร็ว</b> — เคสรุนแรงเด้งถึงกรรมการในไม่กี่วินาที ไม่ต้องรอดึงรายงานจากเว็บกลาง</div>
+  <div class="pt">🔁 <b>วงจรปิด</b> — หน่วยงานเห็นผลการแก้ไข เก็บเป็นหลักฐานและตัวชี้วัดของ รพ. เอง</div>
+  <div class="pt">🧾 <b>กรอกครั้งเดียว</b> — ข้อมูลอยู่ในฐานของ รพ. แล้วระบบพากรอกเข้า NRLS ให้ ลดงานซ้ำซ้อน</div>
+  <div class="pt">📊 <b>ตัวชี้วัดที่เว็บกลางไม่มี</b> — เวลาตอบสนอง เคสค้าง อัตราปิดเคสรายหน่วยงาน พร้อมใช้นำเสนอ HA</div>
+  <div class="pt">🧩 <b>ขยายเองได้</b> — รพ. เพิ่มหัวข้อ/ตัวชี้วัดที่อยากเก็บเองได้ทันที ไม่ต้องรอผู้พัฒนา</div>
+  <div class="pt">🔒 <b>ข้อมูลอยู่ใน รพ.</b> — ระบบออกแบบให้รันใน intranet ของโรงพยาบาล ไม่พึ่ง cloud ภายนอก</div>
+</div>
+
+<h2>ภาพหน้าจอจากระบบ (ข้อมูลจำลอง)</h2>
+
+<div class="shot">
+  <img src="img/home.png" alt="หน้าแรก — เลือกบทบาทผู้ใช้" loading="lazy">
+  <div class="cap"><b>หน้าแรก</b> — แยกทางเข้าตามบทบาท: เจ้าหน้าที่หน้างาน / กรรมการความเสี่ยง / ผู้บริหาร
+    พร้อมตัวเลขงานค้างแบบเรียลไทม์</div>
+</div>
+
+<div class="shot">
+  <img src="img/report.png" alt="ฟอร์มรายงานอุบัติการณ์" loading="lazy">
+  <div class="cap"><b>ฟอร์มรายงานอุบัติการณ์</b> — ฟิลด์ชุดเดียวกับเว็บ NRLS คำถามซ่อน/แสดงตามเงื่อนไขอัตโนมัติ
+    กรอกจบใน ~5 นาที รายงานแบบไม่ระบุตัวตนได้</div>
+</div>
+
+<div class="shot">
+  <img src="img/inbox.png" alt="กล่องงานกรรมการความเสี่ยง" loading="lazy">
+  <div class="cap"><b>งานกรรมการความเสี่ยง</b> — เคสเรียงตามสถานะ/ความรุนแรง เคสรุนแรงที่ยังไม่รับเรื่องเด่นชัด
+    เคสที่ปิดแล้วจางลง ค้นหาได้ทั้งเลขเคส คำในรายละเอียด และชื่อยา</div>
+</div>
+
+<div class="shot">
+  <img src="img/case.png" alt="หน้ารายละเอียดเคสพร้อมไทม์ไลน์" loading="lazy">
+  <div class="cap"><b>หน้าเคส</b> — รับเรื่อง → บันทึกการแก้ไข → ปิดเคส ทุกขั้นลงไทม์ไลน์พร้อมชื่อผู้ดำเนินการและเวลา
+    เป็นหลักฐานการตอบสนองของ รพ.</div>
+</div>
+
+<div class="shot">
+  <img src="img/nrls-sim.png" alt="การส่งเข้า NRLS แบบ human-in-loop" loading="lazy">
+  <div class="cap"><b>ส่งเข้า NRLS (จำลอง)</b> — ระบบเปิดหน้าเว็บกลางแล้วกรอกให้อัตโนมัติทีละช่อง
+    กรรมการตรวจทานก่อนกดบันทึกเองเสมอ — ในเดโมใช้เว็บจำลอง ไม่แตะเว็บราชการจริง</div>
+</div>
+
+<div class="shot">
+  <img src="img/dashboard.png" alt="Dashboard ผู้บริหาร" loading="lazy">
+  <div class="cap"><b>Dashboard ผู้บริหาร</b> — สัดส่วนตามระดับความรุนแรงและกลุ่ม Safety Goals แบบเดียวกับ HRMS
+    บวกตัวชี้วัดที่เว็บกลางไม่มี: เวลารับเรื่อง เวลาปิดเคส และเคสค้างเกินกำหนด รายหน่วยงาน</div>
+</div>
+
+<div class="grid2">
+  <div>
+    <h2>สถานะโครงการ</h2>
+    <ul class="plan">
+      <li>✅ Mock ครบวงจร: ฟอร์ม → คิวกรรมการ → ปิดเคส → ส่ง NRLS (จำลอง) → dashboard</li>
+      <li>✅ ผ่านการทดสอบการใช้งาน (blind usability + UX review) และปรับปรุงตามผลแล้ว</li>
+      <li>🚧 ขั้นถัดไป: เชื่อม NRLS จริงแบบ human-in-loop, ระบบผู้ใช้/สิทธิ์ 3 บทบาท,
+          ช่องทางแจ้งเตือน (ตามที่ผู้บริหารเลือก), export รายงาน HA</li>
+    </ul>
+  </div>
+  <div>
+    <h2>ขอดูเดโมสด</h2>
+    <p style="font-size:15px;margin:8px 0">
+      เดโมรันบนเครื่องผู้พัฒนา/เครื่องใน รพ. (ไม่มีเวอร์ชันออนไลน์ — ข้อมูลระบบจริงต้องอยู่ใน รพ. เท่านั้น)<br>
+      ติดต่อผู้พัฒนาเพื่อนัดดูเดโม หรือรันเองจากซอร์สโค้ด: ติดตั้ง Python + Flask
+      แล้วดับเบิลคลิก <code>app\start.bat</code></p>
+    <div class="note">🔒 โครงการนี้ไม่มีข้อมูลผู้ป่วยจริงทั้งใน repo และในเดโม —
+      ข้อมูลทั้งหมดเป็นข้อมูลจำลองที่สร้างขึ้นเพื่อการพัฒนา</div>
+  </div>
+</div>
+
+<div class="btnrow">
+  <a class="btn gray" href="https://github.com/mkungsuki/CPRISK">ซอร์สโค้ด + เอกสาร (GitHub)</a>
+</div>
+
+</main>
+<footer>CPRISK — จัดทำเพื่อสนับสนุนงานบริหารความเสี่ยง โรงพยาบาลชุมแพ • หน้านี้เป็นเอกสารแนะนำระบบ ไม่ใช่ตัวระบบจริง</footer>
+</body>
+</html>

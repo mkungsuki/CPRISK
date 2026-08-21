@@ -8,6 +8,6 @@
   "sla_ack_hours": 24,
   "sla_resolve_days": 7,
   "nrls_base_url": "https://cphos.thai-nrls.org",
-  "qr_url": "https://github.com/mkungsuki/CPRISK",
-  "qr_label": "GitHub ของโปรเจกต์ CPRISK — เอกสาร + ติดตามความคืบหน้า"
+  "qr_url": "https://mkungsuki.github.io/CPRISK/",
+  "qr_label": "หน้าแนะนำระบบ CPRISK — แนวคิด ภาพหน้าจอ และสถานะโครงการ"
 }
